@@ -224,15 +224,34 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     const originalHost = this.config.host;
     let normalizedHost = originalHost;
 
+    const extractHostValue = (entry) => {
+      if (typeof entry === 'string') {
+        return entry;
+      }
+      if (!entry || typeof entry !== 'object') {
+        return '';
+      }
+
+      if (typeof entry.host === 'string') {
+        return entry.host;
+      }
+      if (typeof entry.value === 'string') {
+        return entry.value;
+      }
+      if (typeof entry.label === 'string') {
+        return entry.label;
+      }
+
+      return '';
+    };
+
     if (Array.isArray(normalizedHost)) {
-      normalizedHost = normalizedHost.find((entry) => typeof entry === 'string') || '';
+      const arrayHost = normalizedHost
+        .map((entry) => extractHostValue(entry))
+        .find((value) => typeof value === 'string' && value.trim());
+      normalizedHost = arrayHost || '';
     } else if (normalizedHost && typeof normalizedHost === 'object') {
-      normalizedHost =
-        typeof normalizedHost.host === 'string'
-          ? normalizedHost.host
-          : typeof normalizedHost.value === 'string'
-            ? normalizedHost.value
-            : '';
+      normalizedHost = extractHostValue(normalizedHost);
     } else if (typeof normalizedHost !== 'string') {
       normalizedHost = '';
     }
