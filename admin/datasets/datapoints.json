@@ -1,0 +1,13 @@
+[
+  { "id": "power", "enabled": true, "interval": 60 },
+  { "id": "mode", "enabled": true, "interval": 60 },
+  { "id": "targetTemperature", "enabled": true, "interval": 60 },
+  { "id": "indoorTemperature", "enabled": true, "interval": 60 },
+  { "id": "outdoorTemperature", "enabled": true, "interval": 60 },
+  { "id": "fanSpeed", "enabled": true, "interval": 60 },
+  { "id": "swingMode", "enabled": true, "interval": 60 },
+  { "id": "ecoMode", "enabled": true, "interval": 60 },
+  { "id": "turboMode", "enabled": true, "interval": 60 },
+  { "id": "sleepMode", "enabled": true, "interval": 60 }
+]
+

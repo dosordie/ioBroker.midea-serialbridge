@@ -1,0 +1,18 @@
+{
+  "general": "Connection",
+  "host": "Bridge host",
+  "host_help": "IP address or hostname of the Midea serial bridge.",
+  "port": "Port",
+  "port_help": "TCP port of the serial bridge (default 23).",
+  "pollingInterval": "Default polling interval",
+  "pollingInterval_help": "Fallback polling interval in seconds if no individual interval is set.",
+  "reconnectInterval": "Reconnect interval",
+  "reconnectInterval_help": "Time in seconds before trying to reconnect after a disconnection.",
+  "polling": "Polling",
+  "pollingRequests": "Data points",
+  "pollingRequests_help": "Select which data points should be polled cyclically and configure individual intervals.",
+  "enabled": "Enabled",
+  "dataPoint": "Data point",
+  "interval": "Interval",
+  "customPolling": "Enable custom polling per data point"
+}
