@@ -85,6 +85,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         );
       });
 
+      this.bridge.on('statusData', (status) => {
+        this._applyStatusUpdate(status).catch((error) => {
+          this.log.debug(`Failed to process status update: ${error.message}`);
+        });
+      });
+
       this.bridge.connect();
     } catch (error) {
       const message = this._formatError(error);
@@ -560,6 +566,29 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       });
     } catch (error) {
       this.log.warn(`Polling ${datapointId} failed: ${error.message}`);
+    }
+  }
+
+  async _applyStatusUpdate(status) {
+    if (!status || !status.values || typeof status.values !== 'object') {
+      return;
+    }
+
+    for (const [datapointId, value] of Object.entries(status.values)) {
+      if (!this.datapointById.has(datapointId)) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(`Failed to update state ${datapointId} from status frame: ${error.message}`);
+      }
     }
   }
 
