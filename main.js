@@ -224,7 +224,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     const originalHost = this.config.host;
     let normalizedHost = originalHost;
 
-    const extractHostValue = (entry) => {
+    const extractHostValue = (entry, visited = new Set()) => {
       if (typeof entry === 'string') {
         return entry;
       }
@@ -232,23 +232,50 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         return '';
       }
 
-      if (typeof entry.host === 'string') {
-        return entry.host;
+      if (visited.has(entry)) {
+        return '';
       }
-      if (typeof entry.value === 'string') {
-        return entry.value;
+      visited.add(entry);
+
+      const tryValue = (value) => {
+        const result = extractHostValue(value, visited);
+        if (typeof result === 'string' && result.trim()) {
+          return result;
+        }
+        return '';
+      };
+
+      if (Array.isArray(entry)) {
+        for (const item of entry) {
+          const result = tryValue(item);
+          if (result) {
+            return result;
+          }
+        }
+        return '';
       }
-      if (typeof entry.label === 'string') {
-        return entry.label;
+
+      for (const key of ['host', 'value', 'label']) {
+        if (key in entry) {
+          const result = tryValue(entry[key]);
+          if (result) {
+            return result;
+          }
+        }
+      }
+
+      for (const value of Object.values(entry)) {
+        const result = tryValue(value);
+        if (result) {
+          return result;
+        }
       }
 
       return '';
     };
 
     if (Array.isArray(normalizedHost)) {
-      const arrayHost = normalizedHost
-        .map((entry) => extractHostValue(entry))
-        .find((value) => typeof value === 'string' && value.trim());
+      const arrayHost = extractHostValue(normalizedHost);
       normalizedHost = arrayHost || '';
     } else if (normalizedHost && typeof normalizedHost === 'object') {
       normalizedHost = extractHostValue(normalizedHost);
