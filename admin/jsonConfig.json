@@ -1,12 +1,14 @@
 {
   "type": "panel",
-  "items": {
-    "connection": {
+  "items": [
+    {
       "type": "panel",
+      "name": "connection",
       "label": "general",
-      "items": {
-        "host": {
+      "items": [
+        {
           "type": "text",
+          "name": "host",
           "label": "host",
           "attr": "host",
           "default": "192.168.1.100",
@@ -15,8 +17,9 @@
           "sm": 6,
           "md": 4
         },
-        "port": {
+        {
           "type": "number",
+          "name": "port",
           "label": "port",
           "attr": "port",
           "default": 23,
@@ -27,8 +30,9 @@
           "sm": 6,
           "md": 4
         },
-        "pollingInterval": {
+        {
           "type": "number",
+          "name": "pollingInterval",
           "label": "pollingInterval",
           "attr": "pollingInterval",
           "default": 60,
@@ -40,8 +44,9 @@
           "sm": 6,
           "md": 4
         },
-        "reconnectInterval": {
+        {
           "type": "number",
+          "name": "reconnectInterval",
           "label": "reconnectInterval",
           "attr": "reconnectInterval",
           "default": 10,
@@ -53,36 +58,41 @@
           "sm": 6,
           "md": 4
         }
-      }
+      ]
     },
-    "polling": {
+    {
       "type": "panel",
+      "name": "polling",
       "label": "polling",
-      "items": {
-        "requests": {
+      "items": [
+        {
           "type": "table",
+          "name": "requests",
           "label": "pollingRequests",
           "help": "pollingRequests_help",
-          "items": {
-            "enabled": {
+          "items": [
+            {
               "type": "checkbox",
+              "name": "enabled",
               "label": "enabled",
               "default": true
             },
-            "id": {
+            {
               "type": "text",
+              "name": "id",
               "label": "dataPoint",
               "readonly": true
             },
-            "interval": {
+            {
               "type": "number",
+              "name": "interval",
               "label": "interval",
               "default": 60,
               "min": 5,
               "max": 3600,
               "unit": "s"
             }
-          },
+          ],
           "custom": {
             "type": "checkbox",
             "label": "customPolling",
@@ -91,9 +101,9 @@
           },
           "tableSource": "datapoints"
         }
-      }
+      ]
     }
-  },
+  ],
   "translations": {
     "general": "general",
     "host": "host",
