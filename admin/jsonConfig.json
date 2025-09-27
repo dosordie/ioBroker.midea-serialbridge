@@ -1,0 +1,115 @@
+{
+  "type": "panel",
+  "items": {
+    "connection": {
+      "type": "panel",
+      "label": "general",
+      "items": {
+        "host": {
+          "type": "text",
+          "label": "host",
+          "attr": "host",
+          "default": "192.168.1.100",
+          "help": "host_help",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "port": {
+          "type": "number",
+          "label": "port",
+          "attr": "port",
+          "default": 23,
+          "help": "port_help",
+          "min": 1,
+          "max": 65535,
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "pollingInterval": {
+          "type": "number",
+          "label": "pollingInterval",
+          "attr": "pollingInterval",
+          "default": 60,
+          "help": "pollingInterval_help",
+          "min": 5,
+          "max": 3600,
+          "unit": "s",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "reconnectInterval": {
+          "type": "number",
+          "label": "reconnectInterval",
+          "attr": "reconnectInterval",
+          "default": 10,
+          "help": "reconnectInterval_help",
+          "min": 1,
+          "max": 600,
+          "unit": "s",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        }
+      }
+    },
+    "polling": {
+      "type": "panel",
+      "label": "polling",
+      "items": {
+        "requests": {
+          "type": "table",
+          "label": "pollingRequests",
+          "help": "pollingRequests_help",
+          "items": {
+            "enabled": {
+              "type": "checkbox",
+              "label": "enabled",
+              "default": true
+            },
+            "id": {
+              "type": "text",
+              "label": "dataPoint",
+              "readonly": true
+            },
+            "interval": {
+              "type": "number",
+              "label": "interval",
+              "default": 60,
+              "min": 5,
+              "max": 3600,
+              "unit": "s"
+            }
+          },
+          "custom": {
+            "type": "checkbox",
+            "label": "customPolling",
+            "attr": "customPolling",
+            "default": false
+          },
+          "tableSource": "datapoints"
+        }
+      }
+    }
+  },
+  "translations": {
+    "general": "general",
+    "host": "host",
+    "host_help": "host_help",
+    "port": "port",
+    "port_help": "port_help",
+    "pollingInterval": "pollingInterval",
+    "pollingInterval_help": "pollingInterval_help",
+    "reconnectInterval": "reconnectInterval",
+    "reconnectInterval_help": "reconnectInterval_help",
+    "polling": "polling",
+    "pollingRequests": "pollingRequests",
+    "pollingRequests_help": "pollingRequests_help",
+    "enabled": "enabled",
+    "dataPoint": "dataPoint",
+    "interval": "interval",
+    "customPolling": "customPolling"
+  }
+}

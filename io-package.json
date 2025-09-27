@@ -1,0 +1,72 @@
+{
+  "common": {
+    "name": "midea_serialbridge",
+    "version": "0.0.1",
+    "title": "Midea Serial Bridge",
+    "titleLang": {
+      "en": "Midea Serial Bridge",
+      "de": "Midea Serial Bridge",
+      "ru": "Midea Serial Bridge",
+      "pt": "Midea Serial Bridge",
+      "nl": "Midea Serial Bridge",
+      "fr": "Midea Serial Bridge",
+      "it": "Midea Serial Bridge",
+      "es": "Midea Serial Bridge",
+      "pl": "Midea Serial Bridge",
+      "uk": "Midea Serial Bridge",
+      "zh-cn": "美的串行桥"
+    },
+    "desc": {
+      "en": "Control Midea HVAC units via the local serial bridge",
+      "de": "Steuert Midea Klimageräte über die lokale Serial Bridge",
+      "ru": "Управление кондиционерами Midea через локальный последовательный мост",
+      "pt": "Controla unidades Midea HVAC via bridge serial local",
+      "nl": "Bedien Midea HVAC via de lokale seriële bridge",
+      "fr": "Contrôle des unités Midea via le pont série local",
+      "it": "Controlla climatizzatori Midea tramite bridge seriale locale",
+      "es": "Controla unidades Midea HVAC a través del bridge serie local",
+      "pl": "Sterowanie klimatyzatorami Midea przez lokalny most szeregowy",
+      "uk": "Керує кондиціонерами Midea через локальний послідовний міст",
+      "zh-cn": "通过本地串行桥控制美的空调"
+    },
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "icon": "midea_serialbridge.svg",
+    "enabled": true,
+    "loglevel": "info",
+    "tier": 2,
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "json"
+    },
+    "readme": "https://github.com/yourname/ioBroker.midea_serialbridge/blob/main/README.md",
+    "keywords": [
+      "midea",
+      "hvac",
+      "serial",
+      "climate"
+    ],
+    "dependencies": [
+      {
+        "js-controller": ">=3.3.0"
+      }
+    ],
+    "authors": [
+      "Your Name <you@example.com>"
+    ],
+    "type": "climate-control"
+  },
+  "native": {
+    "host": "",
+    "port": 23,
+    "pollingInterval": 60,
+    "reconnectInterval": 10,
+    "polling": {
+      "requests": []
+    }
+  },
+  "objects": [],
+  "instanceObjects": []
+}
