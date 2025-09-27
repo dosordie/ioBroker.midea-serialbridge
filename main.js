@@ -3,6 +3,7 @@
 const utils = require('@iobroker/adapter-core');
 const { MideaSerialBridge } = require('./lib/midea-serial-bridge');
 const { DATA_POINTS } = require('./lib/datapoints');
+const { EXIT_CODES } = utils;
 
 class MideaSerialBridgeAdapter extends utils.Adapter {
   constructor(options = {}) {
@@ -14,6 +15,21 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this.bridge = null;
     this.pollTimers = new Map();
     this.datapointById = new Map(DATA_POINTS.map((dp) => [dp.id, dp]));
+    this._terminating = false;
+
+    this._unhandledRejectionHandler = (reason) => {
+      const message = this._formatError(reason);
+      this.log.error(`Unhandled promise rejection: ${message}`);
+      this._terminateAdapter('Unhandled promise rejection', message);
+    };
+
+    this._uncaughtExceptionHandler = (error) => {
+      const message = this._formatError(error);
+      this.log.error(`Uncaught exception: ${message}`);
+      this._terminateAdapter('Uncaught exception', message);
+    };
+
+    this._registerProcessHandlers();
 
     this.on('ready', this.onReady.bind(this));
     this.on('stateChange', this.onStateChange.bind(this));
@@ -22,48 +38,56 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
   async onReady() {
     this.log.debug('Adapter ready event triggered');
-    await this.setStateAsync('info.connection', false, true);
+    try {
+      await this.setStateAsync('info.connection', false, true);
 
-    const configChanged = this._normalizeConfig();
-    if (configChanged) {
-      await this._persistNormalizedConfig();
+      const configChanged = this._normalizeConfig();
+      if (configChanged) {
+        await this._persistNormalizedConfig();
+      }
+
+      if (!this.config || !this.config.host) {
+        this.log.error('No host configured. Please enter the IP address of the serial bridge.');
+        return;
+      }
+
+      await this._ensureObjects();
+      this.subscribeStates('*');
+
+      this.bridge = new MideaSerialBridge({
+        host: this.config.host,
+        port: Number(this.config.port) || 23,
+        reconnectInterval: (Number(this.config.reconnectInterval) || 10) * 1000,
+        log: this.log,
+      });
+
+      this.bridge.on('connected', () => {
+        this.log.info('Serial bridge connection established');
+        this.setStateAsync('info.connection', true, true);
+        this._startPolling();
+      });
+
+      this.bridge.on('disconnected', () => {
+        this.log.warn('Serial bridge disconnected');
+        this.setStateAsync('info.connection', false, true);
+        this._clearPolling();
+      });
+
+      this.bridge.on('error', (error) => {
+        this.log.error(`Serial bridge error: ${error.message}`);
+      });
+
+      this.bridge.connect();
+    } catch (error) {
+      const message = this._formatError(error);
+      this.log.error(`Adapter initialization failed: ${message}`);
+      this._terminateAdapter('Adapter initialization failed', message);
     }
-
-    if (!this.config || !this.config.host) {
-      this.log.error('No host configured. Please enter the IP address of the serial bridge.');
-      return;
-    }
-
-    await this._ensureObjects();
-    this.subscribeStates('*');
-
-    this.bridge = new MideaSerialBridge({
-      host: this.config.host,
-      port: Number(this.config.port) || 23,
-      reconnectInterval: (Number(this.config.reconnectInterval) || 10) * 1000,
-      log: this.log,
-    });
-
-    this.bridge.on('connected', () => {
-      this.log.info('Serial bridge connection established');
-      this.setStateAsync('info.connection', true, true);
-      this._startPolling();
-    });
-
-    this.bridge.on('disconnected', () => {
-      this.log.warn('Serial bridge disconnected');
-      this.setStateAsync('info.connection', false, true);
-      this._clearPolling();
-    });
-
-    this.bridge.on('error', (error) => {
-      this.log.error(`Serial bridge error: ${error.message}`);
-    });
-
-    this.bridge.connect();
   }
 
   async onUnload(callback) {
+    this._terminating = true;
+    this._unregisterProcessHandlers();
     try {
       this._clearPolling();
       if (this.bridge) {
@@ -72,6 +96,21 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       callback();
     } catch (error) {
       callback();
+    }
+  }
+
+  _registerProcessHandlers() {
+    process.on('unhandledRejection', this._unhandledRejectionHandler);
+    process.on('uncaughtException', this._uncaughtExceptionHandler);
+  }
+
+  _unregisterProcessHandlers() {
+    if (typeof process.off === 'function') {
+      process.off('unhandledRejection', this._unhandledRejectionHandler);
+      process.off('uncaughtException', this._uncaughtExceptionHandler);
+    } else {
+      process.removeListener('unhandledRejection', this._unhandledRejectionHandler);
+      process.removeListener('uncaughtException', this._uncaughtExceptionHandler);
     }
   }
 
@@ -104,6 +143,20 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     } catch (error) {
       this.log.error(`Failed to write ${datapointId}: ${error.message}`);
       this.setState(id, { val: state.val, ack: false, q: 0x21 });
+    }
+  }
+
+  _terminateAdapter(reason, detail) {
+    if (this._terminating) {
+      return;
+    }
+    this._terminating = true;
+    try {
+      const exitReason = detail ? `${reason}: ${detail}` : reason;
+      this.terminate(exitReason, EXIT_CODES.ADAPTER_REQUESTED_TERMINATION);
+    } catch (error) {
+      const message = this._formatError(error);
+      this.log.error(`Failed to terminate adapter cleanly: ${message}`);
     }
   }
 
@@ -442,6 +495,26 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
 
     return value;
+  }
+
+  _formatError(error) {
+    if (!error) {
+      return 'Unknown error';
+    }
+
+    if (error instanceof Error) {
+      return error.stack || `${error.name}: ${error.message}`;
+    }
+
+    if (typeof error === 'object') {
+      try {
+        return JSON.stringify(error);
+      } catch (jsonError) {
+        return String(error);
+      }
+    }
+
+    return String(error);
   }
 }
 
