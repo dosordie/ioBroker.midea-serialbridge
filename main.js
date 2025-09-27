@@ -254,17 +254,22 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
   _startPolling() {
     this._clearPolling();
-    const pollingConfig = this._buildPollingConfig();
-    for (const config of pollingConfig) {
-      if (!config.enabled) {
-        continue;
-      }
-      const intervalMs = Math.max(config.interval, 5) * 1000;
-      this.log.debug(`Scheduling polling for ${config.id} every ${intervalMs} ms`);
-      const timer = setInterval(() => this._pollDatapoint(config.id), intervalMs);
-      this.pollTimers.set(config.id, timer);
-      this._pollDatapoint(config.id);
+    const pollingConfig = this._buildPollingConfig().filter((config) => config.enabled);
+    if (pollingConfig.length === 0) {
+      this.log.debug('No datapoints enabled for polling; skipping status requests');
+      return;
     }
+
+    const minInterval = pollingConfig.reduce(
+      (acc, config) => Math.min(acc, config.interval),
+      pollingConfig[0].interval
+    );
+    const intervalMs = Math.max(minInterval, 5) * 1000;
+
+    this.log.debug(`Scheduling status polling every ${intervalMs} ms`);
+    const timer = setInterval(() => this._pollStatus(), intervalMs);
+    this.pollTimers.set('status', timer);
+    this._pollStatus();
   }
 
   _clearPolling() {
@@ -547,25 +552,15 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     return true;
   }
 
-  async _pollDatapoint(datapointId) {
+  async _pollStatus() {
     if (!this.bridge || !this.bridge.connected) {
       return;
     }
 
-    const datapoint = this.datapointById.get(datapointId);
-    if (!datapoint) {
-      return;
-    }
-
     try {
-      const value = await this.bridge.query(datapointId);
-      const normalized = this._normalizeReadValue(datapoint, value);
-      await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
-        val: normalized,
-        ack: true,
-      });
+      await this.bridge.requestStatus();
     } catch (error) {
-      this.log.warn(`Polling ${datapointId} failed: ${error.message}`);
+      this.log.warn(`Polling status failed: ${error.message}`);
     }
   }
 
