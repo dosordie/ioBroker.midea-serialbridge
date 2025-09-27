@@ -84,16 +84,9 @@
               "attr": "id",
               "label": "dataPoint",
               "options": [
-                { "value": "power", "label": "power" },
-                { "value": "mode", "label": "mode" },
-                { "value": "targetTemperature", "label": "targetTemperature" },
-                { "value": "indoorTemperature", "label": "indoorTemperature" },
-                { "value": "outdoorTemperature", "label": "outdoorTemperature" },
-                { "value": "fanSpeed", "label": "fanSpeed" },
-                { "value": "swingMode", "label": "swingMode" },
-                { "value": "ecoMode", "label": "ecoMode" },
-                { "value": "turboMode", "label": "turboMode" },
-                { "value": "sleepMode", "label": "sleepMode" }
+                { "value": "getStatus", "label": "getStatus" },
+                { "value": "getCapabilities", "label": "getCapabilities" },
+                { "value": "getPowerUsage", "label": "getPowerUsage" }
               ]
             },
             {
@@ -128,15 +121,8 @@
     "interval": "interval",
     "customPolling": "customPolling",
     "customPolling_help": "customPolling_help",
-    "power": "power",
-    "mode": "mode",
-    "targetTemperature": "targetTemperature",
-    "indoorTemperature": "indoorTemperature",
-    "outdoorTemperature": "outdoorTemperature",
-    "fanSpeed": "fanSpeed",
-    "swingMode": "swingMode",
-    "ecoMode": "ecoMode",
-    "turboMode": "turboMode",
-    "sleepMode": "sleepMode"
+    "getStatus": "getStatus",
+    "getCapabilities": "getCapabilities",
+    "getPowerUsage": "getPowerUsage"
   }
 }

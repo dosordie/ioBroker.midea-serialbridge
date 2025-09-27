@@ -21,7 +21,8 @@
   "dependencies": {
     "@iobroker/adapter-core": "^3.0.0",
     "@iobroker/json-config": "^1.0.0",
-    "crypto-js": "^4.2.0"
+    "crypto-js": "^4.2.0",
+    "node-mideahvac": "^0.3.0"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

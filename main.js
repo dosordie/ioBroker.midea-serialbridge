@@ -5,6 +5,23 @@ const { MideaSerialBridge } = require('./lib/midea-serial-bridge');
 const { DATA_POINTS } = require('./lib/datapoints');
 const { EXIT_CODES } = utils;
 
+const POLLING_METHODS = [
+  {
+    id: 'getStatus',
+    defaultInterval: 60,
+  },
+  {
+    id: 'getCapabilities',
+    defaultInterval: 3600,
+  },
+  {
+    id: 'getPowerUsage',
+    defaultInterval: 300,
+  },
+];
+
+const POLLING_METHOD_MAP = new Map(POLLING_METHODS.map((entry) => [entry.id, entry]));
+
 class MideaSerialBridgeAdapter extends utils.Adapter {
   constructor(options = {}) {
     super({
@@ -16,6 +33,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this.pollTimers = new Map();
     this.datapointById = new Map(DATA_POINTS.map((dp) => [dp.id, dp]));
     this._terminating = false;
+    this._knownCapabilityStates = new Set();
 
     this._unhandledRejectionHandler = (reason) => {
       const message = this._formatError(reason);
@@ -73,25 +91,25 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         this._clearPolling();
       });
 
-      this.bridge.on('error', (error) => {
-        this.log.error(`Serial bridge error: ${error.message}`);
-      });
-
-      this.bridge.on('status', (frame) => {
-        this.log.debug(
-          `Received unsolicited status frame (command 0x${frame.command
-            .toString(16)
-            .padStart(2, '0')})`
-        );
-      });
-
-      this.bridge.on('statusData', (status) => {
-        this._applyStatusUpdate(status).catch((error) => {
+      this.bridge.on('statusData', (values) => {
+        this._applyStatusUpdate(values).catch((error) => {
           this.log.debug(`Failed to process status update: ${error.message}`);
         });
       });
 
-      this.bridge.connect();
+      this.bridge.on('capabilities', (capabilities) => {
+        this._applyCapabilities(capabilities).catch((error) => {
+          this.log.debug(`Failed to process capabilities update: ${error.message}`);
+        });
+      });
+
+      this.bridge.on('powerUsage', (usage) => {
+        this._applyPowerUsage(usage).catch((error) => {
+          this.log.debug(`Failed to process power usage update: ${error.message}`);
+        });
+      });
+
+      await this.bridge.connect();
     } catch (error) {
       const message = this._formatError(error);
       this.log.error(`Adapter initialization failed: ${message}`);
@@ -152,8 +170,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     try {
       const value = this._normalizeWriteValue(datapoint, state.val);
       this.log.debug(`Forwarding command ${datapointId} with value ${JSON.stringify(value)}`);
-      await this.bridge.set(datapointId, value);
-      await this.setStateAsync(id, { val: value, ack: true });
+      const updates = await this.bridge.set(datapointId, value);
+      if (updates && typeof updates === 'object' && Object.keys(updates).length > 0) {
+        await this._applyStatusUpdate(updates);
+      } else {
+        await this.setStateAsync(id, { val: value, ack: true });
+      }
     } catch (error) {
       this.log.error(`Failed to write ${datapointId}: ${error.message}`);
       this.setState(id, { val: state.val, ack: false, q: 0x21 });
@@ -212,6 +234,32 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       native: {},
     });
 
+    await this.setObjectNotExistsAsync('capabilities', {
+      type: 'channel',
+      common: {
+        name: 'Capabilities',
+      },
+      native: {},
+    });
+
+    await this.setObjectNotExistsAsync('capabilities.raw', {
+      type: 'state',
+      common: {
+        name: 'Capabilities (raw)',
+        type: 'string',
+        role: 'json',
+        read: true,
+        write: false,
+        def: '',
+      },
+      native: {},
+    });
+
+    const existingCapabilitiesRaw = await this.getStateAsync('capabilities.raw');
+    if (!existingCapabilitiesRaw) {
+      await this.setStateAsync('capabilities.raw', { val: '', ack: true });
+    }
+
     for (const datapoint of DATA_POINTS) {
       const stateId = `${datapoint.channel}.${datapoint.id}`;
       const common = {
@@ -256,20 +304,24 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this._clearPolling();
     const pollingConfig = this._buildPollingConfig().filter((config) => config.enabled);
     if (pollingConfig.length === 0) {
-      this.log.debug('No datapoints enabled for polling; skipping status requests');
+      this.log.debug('No polling requests enabled; skipping scheduled commands');
       return;
     }
 
-    const minInterval = pollingConfig.reduce(
-      (acc, config) => Math.min(acc, config.interval),
-      pollingConfig[0].interval
-    );
-    const intervalMs = Math.max(minInterval, 5) * 1000;
+    for (const config of pollingConfig) {
+      const method = POLLING_METHOD_MAP.get(config.id);
+      if (!method) {
+        this.log.debug(`Ignoring unknown polling request ${config.id}`);
+        continue;
+      }
 
-    this.log.debug(`Scheduling status polling every ${intervalMs} ms`);
-    const timer = setInterval(() => this._pollStatus(), intervalMs);
-    this.pollTimers.set('status', timer);
-    this._pollStatus();
+      const intervalMs = Math.max(config.interval, 5) * 1000;
+      this.log.debug(`Scheduling ${config.id} polling every ${intervalMs} ms`);
+      const handler = () => this._executePolling(config.id);
+      const timer = setInterval(handler, intervalMs);
+      this.pollTimers.set(config.id, timer);
+      handler();
+    }
   }
 
   _clearPolling() {
@@ -277,6 +329,22 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       clearInterval(timer);
     }
     this.pollTimers.clear();
+  }
+
+  _executePolling(methodId) {
+    switch (methodId) {
+      case 'getStatus':
+        this._pollStatus();
+        break;
+      case 'getCapabilities':
+        this._pollCapabilities();
+        break;
+      case 'getPowerUsage':
+        this._pollPowerUsage();
+        break;
+      default:
+        this.log.debug(`No polling handler registered for ${methodId}`);
+    }
   }
 
   _buildPollingConfig() {
@@ -293,12 +361,13 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       });
     }
 
-    return DATA_POINTS.filter((dp) => dp.pollable).map((dp) => {
-      const entry = map.get(dp.id);
+    return POLLING_METHODS.map((method) => {
+      const entry = map.get(method.id);
+      const fallbackInterval = method.id === 'getStatus' ? defaultInterval : method.defaultInterval;
       return {
-        id: dp.id,
-        enabled: entry ? entry.enabled : true,
-        interval: entry ? entry.interval : defaultInterval,
+        id: method.id,
+        enabled: entry ? entry.enabled : method.id === 'getStatus',
+        interval: entry ? entry.interval : fallbackInterval,
       };
     });
   }
@@ -558,18 +627,47 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
 
     try {
-      await this.bridge.requestStatus();
+      await this.bridge.getStatus();
     } catch (error) {
       this.log.warn(`Polling status failed: ${error.message}`);
     }
   }
 
-  async _applyStatusUpdate(status) {
-    if (!status || !status.values || typeof status.values !== 'object') {
+  async _pollCapabilities() {
+    if (!this.bridge || !this.bridge.connected) {
       return;
     }
 
-    for (const [datapointId, value] of Object.entries(status.values)) {
+    try {
+      await this.bridge.getCapabilities();
+    } catch (error) {
+      this.log.warn(`Polling capabilities failed: ${error.message}`);
+    }
+  }
+
+  async _pollPowerUsage() {
+    if (!this.bridge || !this.bridge.connected) {
+      return;
+    }
+
+    try {
+      await this.bridge.getPowerUsage();
+    } catch (error) {
+      this.log.warn(`Polling power usage failed: ${error.message}`);
+    }
+  }
+
+  async _applyStatusUpdate(status) {
+    if (!status || typeof status !== 'object') {
+      return;
+    }
+
+    const entries =
+      status.values && typeof status.values === 'object'
+        ? Object.entries(status.values)
+        : Object.entries(status);
+
+    for (const [datapointId, value] of entries) {
       if (!this.datapointById.has(datapointId)) {
         continue;
       }
@@ -585,6 +683,83 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         this.log.debug(`Failed to update state ${datapointId} from status frame: ${error.message}`);
       }
     }
+  }
+
+  async _applyCapabilities(capabilities) {
+    if (!capabilities || typeof capabilities !== 'object') {
+      return;
+    }
+
+    try {
+      await this.setStateAsync('capabilities.raw', {
+        val: JSON.stringify(capabilities),
+        ack: true,
+      });
+    } catch (error) {
+      this.log.debug(`Failed to update capabilities.raw: ${error.message}`);
+    }
+
+    for (const [key, value] of Object.entries(capabilities)) {
+      try {
+        await this._ensureCapabilityState(key, value);
+        await this.setStateAsync(`capabilities.${key}`, { val: value, ack: true });
+      } catch (error) {
+        this.log.debug(`Failed to update capability ${key}: ${error.message}`);
+      }
+    }
+  }
+
+  async _applyPowerUsage(usage) {
+    if (!usage || typeof usage !== 'object') {
+      return;
+    }
+
+    if (!this.datapointById.has('powerUsage')) {
+      return;
+    }
+
+    const datapoint = this.datapointById.get('powerUsage');
+    const normalized = this._normalizeReadValue(datapoint, usage.powerUsage);
+    try {
+      await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+        val: normalized,
+        ack: true,
+      });
+    } catch (error) {
+      this.log.debug(`Failed to update power usage state: ${error.message}`);
+    }
+  }
+
+  async _ensureCapabilityState(key, value) {
+    if (this._knownCapabilityStates.has(key)) {
+      return;
+    }
+
+    const valueType = typeof value;
+    let type = 'string';
+    let role = 'text';
+
+    if (valueType === 'boolean') {
+      type = 'boolean';
+      role = 'indicator';
+    } else if (valueType === 'number') {
+      type = 'number';
+      role = 'value';
+    }
+
+    await this.setObjectNotExistsAsync(`capabilities.${key}`, {
+      type: 'state',
+      common: {
+        name: key,
+        type,
+        role,
+        read: true,
+        write: false,
+      },
+      native: {},
+    });
+
+    this._knownCapabilityStates.add(key);
   }
 
   _getPollingEntries() {
@@ -610,6 +785,13 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       return parsed;
     }
 
+    if (datapoint.type === 'string') {
+      if (value == null) {
+        return '';
+      }
+      return String(value).trim();
+    }
+
     return value;
   }
 
@@ -620,6 +802,13 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
     if (datapoint.type === 'number') {
       return Number(value);
+    }
+
+    if (datapoint.type === 'string') {
+      if (value == null) {
+        return '';
+      }
+      return String(value);
     }
 
     return value;
