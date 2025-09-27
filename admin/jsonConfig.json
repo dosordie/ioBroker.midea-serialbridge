@@ -68,7 +68,7 @@
         {
           "type": "table",
           "name": "requests",
-          "attr": "requests",
+          "attr": "pollingRequests",
           "label": "pollingRequests",
           "help": "pollingRequests_help",
           "items": [

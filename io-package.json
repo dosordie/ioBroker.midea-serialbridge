@@ -63,9 +63,8 @@
     "port": 23,
     "pollingInterval": 60,
     "reconnectInterval": 10,
-    "polling": {
-      "requests": []
-    }
+    "customPolling": false,
+    "pollingRequests": []
   },
   "objects": [],
   "instanceObjects": []
