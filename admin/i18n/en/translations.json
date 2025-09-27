@@ -8,6 +8,8 @@
   "pollingInterval_help": "Fallback polling interval in seconds if no individual interval is set.",
   "reconnectInterval": "Reconnect interval",
   "reconnectInterval_help": "Time in seconds before trying to reconnect after a disconnection.",
+  "beep": "Device beep on commands",
+  "beep_help": "Disable to prevent the indoor unit from beeping when commands are sent.",
   "polling": "Polling",
   "pollingRequests": "Commands",
   "pollingRequests_help": "Select which commands should be executed cyclically and configure individual intervals.",
