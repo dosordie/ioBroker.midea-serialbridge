@@ -221,6 +221,36 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   _normalizeConfig() {
     let changed = false;
 
+    const moveLegacyValue = (legacyKey, targetKey, predicate = () => true) => {
+      if (!Object.prototype.hasOwnProperty.call(this.config, legacyKey)) {
+        return;
+      }
+
+      const legacyValue = this.config[legacyKey];
+      if (predicate(legacyValue) && this.config[targetKey] === undefined) {
+        this.config[targetKey] = legacyValue;
+      }
+
+      delete this.config[legacyKey];
+      changed = true;
+    };
+
+    if (Object.prototype.hasOwnProperty.call(this.config, '0')) {
+      const legacyZero = this.config['0'];
+      if (typeof legacyZero === 'string' && this.config.host === undefined) {
+        this.config.host = legacyZero;
+      } else if (Array.isArray(legacyZero) && !Array.isArray(this.config.pollingRequests)) {
+        this.config.pollingRequests = legacyZero;
+      }
+      delete this.config['0'];
+      changed = true;
+    }
+
+    moveLegacyValue('1', 'port');
+    moveLegacyValue('2', 'pollingInterval');
+    moveLegacyValue('3', 'reconnectInterval');
+    moveLegacyValue('4', 'customPolling', (value) => typeof value === 'boolean');
+
     const originalHost = this.config.host;
     let normalizedHost = originalHost;
 
