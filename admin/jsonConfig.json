@@ -78,10 +78,21 @@
               "default": true
             },
             {
-              "type": "text",
+              "type": "select",
               "name": "id",
               "label": "dataPoint",
-              "readonly": true
+              "options": [
+                { "value": "power", "label": "power" },
+                { "value": "mode", "label": "mode" },
+                { "value": "targetTemperature", "label": "targetTemperature" },
+                { "value": "indoorTemperature", "label": "indoorTemperature" },
+                { "value": "outdoorTemperature", "label": "outdoorTemperature" },
+                { "value": "fanSpeed", "label": "fanSpeed" },
+                { "value": "swingMode", "label": "swingMode" },
+                { "value": "ecoMode", "label": "ecoMode" },
+                { "value": "turboMode", "label": "turboMode" },
+                { "value": "sleepMode", "label": "sleepMode" }
+              ]
             },
             {
               "type": "number",
@@ -98,8 +109,7 @@
             "label": "customPolling",
             "attr": "customPolling",
             "default": false
-          },
-          "tableSource": "datapoints"
+          }
         }
       ]
     }
@@ -120,6 +130,16 @@
     "enabled": "enabled",
     "dataPoint": "dataPoint",
     "interval": "interval",
-    "customPolling": "customPolling"
+    "customPolling": "customPolling",
+    "power": "power",
+    "mode": "mode",
+    "targetTemperature": "targetTemperature",
+    "indoorTemperature": "indoorTemperature",
+    "outdoorTemperature": "outdoorTemperature",
+    "fanSpeed": "fanSpeed",
+    "swingMode": "swingMode",
+    "ecoMode": "ecoMode",
+    "turboMode": "turboMode",
+    "sleepMode": "sleepMode"
   }
 }
