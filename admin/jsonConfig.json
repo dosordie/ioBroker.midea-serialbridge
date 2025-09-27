@@ -52,6 +52,16 @@
           "xs": 12,
           "sm": 6,
           "md": 4
+        },
+        "beep": {
+          "type": "checkbox",
+          "label": "beep",
+          "attr": "beep",
+          "default": true,
+          "help": "beep_help",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
         }
       }
     },
@@ -113,6 +123,8 @@
     "pollingInterval_help": "pollingInterval_help",
     "reconnectInterval": "reconnectInterval",
     "reconnectInterval_help": "reconnectInterval_help",
+    "beep": "beep",
+    "beep_help": "beep_help",
     "polling": "polling",
     "pollingRequests": "pollingRequests",
     "pollingRequests_help": "pollingRequests_help",

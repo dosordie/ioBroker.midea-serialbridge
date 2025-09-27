@@ -63,6 +63,7 @@
     "port": 23,
     "pollingInterval": 60,
     "reconnectInterval": 10,
+    "beep": true,
     "customPolling": false,
     "pollingRequests": []
   },

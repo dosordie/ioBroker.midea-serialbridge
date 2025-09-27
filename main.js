@@ -77,6 +77,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         port: Number(this.config.port) || 23,
         reconnectInterval: (Number(this.config.reconnectInterval) || 10) * 1000,
         log: this.log,
+        beepOnCommand: this.config.beep !== false,
       });
 
       this.bridge.on('connected', () => {

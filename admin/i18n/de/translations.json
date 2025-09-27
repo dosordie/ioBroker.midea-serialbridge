@@ -8,6 +8,8 @@
   "pollingInterval_help": "Fallback polling interval in seconds if no individual interval is set.",
   "reconnectInterval": "Reconnect interval",
   "reconnectInterval_help": "Time in seconds before trying to reconnect after a disconnection.",
+  "beep": "Signalton bei Befehlen",
+  "beep_help": "Deaktivieren, um das Piepen des Geräts bei Befehlen zu verhindern.",
   "polling": "Polling",
   "pollingRequests": "Befehle",
   "pollingRequests_help": "Wählen Sie aus, welche Befehle zyklisch ausgeführt werden und konfigurieren Sie individuelle Intervalle.",
