@@ -24,7 +24,10 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this.log.debug('Adapter ready event triggered');
     await this.setStateAsync('info.connection', false, true);
 
-    this._normalizeConfig();
+    const configChanged = this._normalizeConfig();
+    if (configChanged) {
+      await this._persistNormalizedConfig();
+    }
 
     if (!this.config || !this.config.host) {
       this.log.error('No host configured. Please enter the IP address of the serial bridge.');
@@ -216,32 +219,45 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   }
 
   _normalizeConfig() {
-    if (Array.isArray(this.config.host)) {
-      const firstString = this.config.host.find((entry) => typeof entry === 'string');
-      if (typeof firstString === 'string') {
-        this.config.host = firstString;
-      } else {
-        this.config.host = '';
-      }
-    } else if (this.config.host && typeof this.config.host === 'object') {
-      const hostValue =
-        typeof this.config.host.host === 'string'
-          ? this.config.host.host
-          : typeof this.config.host.value === 'string'
-            ? this.config.host.value
+    let changed = false;
+
+    const originalHost = this.config.host;
+    let normalizedHost = originalHost;
+
+    if (Array.isArray(normalizedHost)) {
+      normalizedHost = normalizedHost.find((entry) => typeof entry === 'string') || '';
+    } else if (normalizedHost && typeof normalizedHost === 'object') {
+      normalizedHost =
+        typeof normalizedHost.host === 'string'
+          ? normalizedHost.host
+          : typeof normalizedHost.value === 'string'
+            ? normalizedHost.value
             : '';
-      this.config.host = hostValue;
-    } else if (typeof this.config.host !== 'string') {
-      this.config.host = '';
+    } else if (typeof normalizedHost !== 'string') {
+      normalizedHost = '';
     }
 
-    if (!this.config.polling || !Array.isArray(this.config.polling.requests)) {
-      if (Array.isArray(this.config.pollingRequests)) {
-        this.config.polling = {
-          ...(this.config.polling || {}),
-          requests: this.config.pollingRequests,
-        };
-      }
+    if (typeof normalizedHost === 'string' && normalizedHost.includes('[object Object]')) {
+      normalizedHost = '';
+    }
+
+    if (normalizedHost !== originalHost) {
+      this.config.host = normalizedHost;
+      changed = true;
+    }
+
+    const pollingIsObject = this.config.polling && typeof this.config.polling === 'object';
+    const existingRequests =
+      pollingIsObject && Array.isArray(this.config.polling.requests)
+        ? this.config.polling.requests
+        : null;
+
+    if (!existingRequests && Array.isArray(this.config.pollingRequests)) {
+      this.config.polling = {
+        ...(pollingIsObject ? this.config.polling : {}),
+        requests: this.config.pollingRequests,
+      };
+      changed = true;
     }
 
     if (
@@ -250,6 +266,32 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       typeof this.config.polling.customPolling === 'boolean'
     ) {
       this.config.customPolling = this.config.polling.customPolling;
+      changed = true;
+    }
+
+    if (
+      this.config.polling &&
+      Array.isArray(this.config.polling.requests) &&
+      !Array.isArray(this.config.pollingRequests)
+    ) {
+      this.config.pollingRequests = this.config.polling.requests.map((entry) => ({
+        id: entry.id,
+        enabled: entry.enabled !== false,
+        interval: Number(entry.interval) || Number(this.config.pollingInterval) || 60,
+      }));
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  async _persistNormalizedConfig() {
+    try {
+      await this.extendForeignObjectAsync(`system.adapter.${this.namespace}`, {
+        native: this.config,
+      });
+    } catch (error) {
+      this.log.warn(`Failed to persist normalized config: ${error.message}`);
     }
   }
 
