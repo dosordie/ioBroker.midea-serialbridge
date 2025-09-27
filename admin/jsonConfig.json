@@ -68,18 +68,21 @@
         {
           "type": "table",
           "name": "requests",
+          "attr": "requests",
           "label": "pollingRequests",
           "help": "pollingRequests_help",
           "items": [
             {
               "type": "checkbox",
               "name": "enabled",
+              "attr": "enabled",
               "label": "enabled",
               "default": true
             },
             {
               "type": "select",
               "name": "id",
+              "attr": "id",
               "label": "dataPoint",
               "options": [
                 { "value": "power", "label": "power" },
@@ -97,6 +100,7 @@
             {
               "type": "number",
               "name": "interval",
+              "attr": "interval",
               "label": "interval",
               "default": 60,
               "min": 5,
