@@ -1,5 +1,5 @@
 {
-  "type": "panel",
+  "type": "tabs",
   "items": [
     {
       "type": "panel",
