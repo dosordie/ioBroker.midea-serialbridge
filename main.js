@@ -116,6 +116,19 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       native: {},
     });
 
+    await this.setObjectNotExistsAsync('info.connection', {
+      type: 'state',
+      common: {
+        name: 'Connection status',
+        type: 'boolean',
+        role: 'indicator.connected',
+        read: true,
+        write: false,
+        def: false,
+      },
+      native: {},
+    });
+
     await this.setObjectNotExistsAsync('control', {
       type: 'channel',
       common: {
