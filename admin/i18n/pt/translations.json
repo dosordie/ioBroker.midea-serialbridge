@@ -14,5 +14,15 @@
   "enabled": "Enabled",
   "dataPoint": "Data point",
   "interval": "Interval",
-  "customPolling": "Enable custom polling per data point"
+  "customPolling": "Enable custom polling per data point",
+  "power": "Power",
+  "mode": "Mode",
+  "targetTemperature": "Target temperature",
+  "indoorTemperature": "Indoor temperature",
+  "outdoorTemperature": "Outdoor temperature",
+  "fanSpeed": "Fan speed",
+  "swingMode": "Swing mode",
+  "ecoMode": "Eco mode",
+  "turboMode": "Turbo mode",
+  "sleepMode": "Sleep mode"
 }
