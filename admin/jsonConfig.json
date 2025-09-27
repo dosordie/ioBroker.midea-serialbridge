@@ -68,7 +68,7 @@
         {
           "type": "table",
           "name": "requests",
-          "attr": "requests",
+          "attr": "polling.requests",
           "label": "pollingRequests",
           "help": "pollingRequests_help",
           "items": [
@@ -111,7 +111,7 @@
           "custom": {
             "type": "checkbox",
             "label": "customPolling",
-            "attr": "customPolling",
+            "attr": "polling.customPolling",
             "default": false
           }
         }
