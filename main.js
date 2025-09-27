@@ -77,6 +77,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         this.log.error(`Serial bridge error: ${error.message}`);
       });
 
+      this.bridge.on('status', (frame) => {
+        this.log.debug(
+          `Received unsolicited status frame (command 0x${frame.command
+            .toString(16)
+            .padStart(2, '0')})`
+        );
+      });
+
       this.bridge.connect();
     } catch (error) {
       const message = this._formatError(error);
