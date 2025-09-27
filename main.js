@@ -41,9 +41,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     try {
       await this.setStateAsync('info.connection', false, true);
 
-      const configChanged = this._normalizeConfig();
-      if (configChanged) {
-        await this._persistNormalizedConfig();
+      const normalizationResult = this._normalizeConfig();
+      if (normalizationResult.changed) {
+        await this._persistNormalizedConfig(normalizationResult.normalizedConfig);
       }
 
       if (!this.config || !this.config.host) {
@@ -285,6 +285,11 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   }
 
   _normalizeConfig() {
+    if (!this.config || typeof this.config !== 'object') {
+      this.config = {};
+    }
+
+    const originalConfig = this._deepClone(this.config);
     let changed = false;
 
     const moveLegacyValue = (legacyKey, targetKey, predicate = () => true) => {
@@ -424,17 +429,108 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
-    return changed;
+    const normalizedConfig = this._deepClone(this.config);
+    const configChanged = changed || !this._deepEqual(originalConfig, normalizedConfig);
+
+    return {
+      changed: configChanged,
+      normalizedConfig,
+    };
   }
 
-  async _persistNormalizedConfig() {
+  async _persistNormalizedConfig(normalizedConfig) {
     try {
-      await this.extendForeignObjectAsync(`system.adapter.${this.namespace}`, {
-        native: this.config,
-      });
+      const objectId = `system.adapter.${this.namespace}`;
+      const adapterObject = await this.getForeignObjectAsync(objectId);
+      if (!adapterObject) {
+        return;
+      }
+
+      if (this._deepEqual(adapterObject.native, normalizedConfig)) {
+        return;
+      }
+
+      adapterObject.native = this._deepClone(normalizedConfig);
+      await this.setForeignObjectAsync(objectId, adapterObject);
     } catch (error) {
       this.log.warn(`Failed to persist normalized config: ${error.message}`);
     }
+  }
+
+  _deepClone(value, seen = new WeakMap()) {
+    if (value === null || typeof value !== 'object') {
+      return value;
+    }
+
+    if (seen.has(value)) {
+      return seen.get(value);
+    }
+
+    if (Array.isArray(value)) {
+      const clonedArray = [];
+      seen.set(value, clonedArray);
+      for (const item of value) {
+        clonedArray.push(this._deepClone(item, seen));
+      }
+      return clonedArray;
+    }
+
+    const clonedObject = {};
+    seen.set(value, clonedObject);
+    for (const key of Object.keys(value)) {
+      clonedObject[key] = this._deepClone(value[key], seen);
+    }
+    return clonedObject;
+  }
+
+  _deepEqual(a, b, visited = new WeakMap()) {
+    if (a === b) {
+      return true;
+    }
+
+    if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') {
+      return false;
+    }
+
+    if (visited.has(a)) {
+      return visited.get(a) === b;
+    }
+    visited.set(a, b);
+
+    if (Array.isArray(a)) {
+      if (!Array.isArray(b) || a.length !== b.length) {
+        return false;
+      }
+
+      for (let i = 0; i < a.length; i++) {
+        if (!this._deepEqual(a[i], b[i], visited)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (Array.isArray(b)) {
+      return false;
+    }
+
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+
+    if (aKeys.length !== bKeys.length) {
+      return false;
+    }
+
+    for (const key of aKeys) {
+      if (!Object.prototype.hasOwnProperty.call(b, key)) {
+        return false;
+      }
+      if (!this._deepEqual(a[key], b[key], visited)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   async _pollDatapoint(datapointId) {
