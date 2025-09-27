@@ -24,5 +24,6 @@
   "swingMode": "Swing mode",
   "ecoMode": "Eco mode",
   "turboMode": "Turbo mode",
-  "sleepMode": "Sleep mode"
+  "sleepMode": "Sleep mode",
+  "customPolling_help": "Allow configuring individual polling intervals per data point."
 }

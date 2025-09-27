@@ -1,14 +1,12 @@
 {
   "type": "tabs",
-  "items": [
-    {
+  "items": {
+    "connection": {
       "type": "panel",
-      "name": "connection",
       "label": "general",
-      "items": [
-        {
+      "items": {
+        "host": {
           "type": "text",
-          "name": "host",
           "label": "host",
           "attr": "host",
           "default": "192.168.1.100",
@@ -17,9 +15,8 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "port": {
           "type": "number",
-          "name": "port",
           "label": "port",
           "attr": "port",
           "default": 23,
@@ -30,9 +27,8 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "pollingInterval": {
           "type": "number",
-          "name": "pollingInterval",
           "label": "pollingInterval",
           "attr": "pollingInterval",
           "default": 60,
@@ -44,9 +40,8 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "reconnectInterval": {
           "type": "number",
-          "name": "reconnectInterval",
           "label": "reconnectInterval",
           "attr": "reconnectInterval",
           "default": 10,
@@ -58,30 +53,34 @@
           "sm": 6,
           "md": 4
         }
-      ]
+      }
     },
-    {
+    "polling": {
       "type": "panel",
-      "name": "polling",
       "label": "polling",
-      "items": [
-        {
+      "items": {
+        "customPolling": {
+          "type": "checkbox",
+          "label": "customPolling",
+          "attr": "customPolling",
+          "default": false,
+          "help": "customPolling_help",
+          "xs": 12
+        },
+        "requests": {
           "type": "table",
-          "name": "requests",
           "attr": "pollingRequests",
           "label": "pollingRequests",
           "help": "pollingRequests_help",
           "items": [
             {
               "type": "checkbox",
-              "name": "enabled",
               "attr": "enabled",
               "label": "enabled",
               "default": true
             },
             {
               "type": "select",
-              "name": "id",
               "attr": "id",
               "label": "dataPoint",
               "options": [
@@ -99,7 +98,6 @@
             },
             {
               "type": "number",
-              "name": "interval",
               "attr": "interval",
               "label": "interval",
               "default": 60,
@@ -107,17 +105,11 @@
               "max": 3600,
               "unit": "s"
             }
-          ],
-          "custom": {
-            "type": "checkbox",
-            "label": "customPolling",
-            "attr": "customPolling",
-            "default": false
-          }
+          ]
         }
-      ]
+      }
     }
-  ],
+  },
   "translations": {
     "general": "general",
     "host": "host",
@@ -135,6 +127,7 @@
     "dataPoint": "dataPoint",
     "interval": "interval",
     "customPolling": "customPolling",
+    "customPolling_help": "customPolling_help",
     "power": "power",
     "mode": "mode",
     "targetTemperature": "targetTemperature",
