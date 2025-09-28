@@ -552,12 +552,54 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       normalizedHost = '';
     }
 
-    if (typeof normalizedHost === 'string' && normalizedHost.includes('[object Object]')) {
-      normalizedHost = '';
+    if (typeof normalizedHost === 'string') {
+      if (normalizedHost.includes('[object Object]')) {
+        normalizedHost = '';
+      } else {
+        const trimmedHost = normalizedHost.trim();
+        if (trimmedHost !== normalizedHost) {
+          normalizedHost = trimmedHost;
+        }
+      }
     }
 
     if (normalizedHost !== originalHost) {
       this.config.host = normalizedHost;
+      changed = true;
+    }
+
+    const normalizeInteger = (value, fallback, min, max) => {
+      const numericValue = Number(value);
+      if (!Number.isFinite(numericValue)) {
+        return fallback;
+      }
+
+      let roundedValue = Math.round(numericValue);
+      if (typeof min === 'number') {
+        roundedValue = Math.max(roundedValue, min);
+      }
+      if (typeof max === 'number') {
+        roundedValue = Math.min(roundedValue, max);
+      }
+
+      return roundedValue;
+    };
+
+    const normalizedPort = normalizeInteger(this.config.port, 23, 1, 65535);
+    if (normalizedPort !== this.config.port) {
+      this.config.port = normalizedPort;
+      changed = true;
+    }
+
+    const normalizedPollingInterval = normalizeInteger(this.config.pollingInterval, 60, 5, 3600);
+    if (normalizedPollingInterval !== this.config.pollingInterval) {
+      this.config.pollingInterval = normalizedPollingInterval;
+      changed = true;
+    }
+
+    const normalizedReconnectInterval = normalizeInteger(this.config.reconnectInterval, 10, 1, 600);
+    if (normalizedReconnectInterval !== this.config.reconnectInterval) {
+      this.config.reconnectInterval = normalizedReconnectInterval;
       changed = true;
     }
 
