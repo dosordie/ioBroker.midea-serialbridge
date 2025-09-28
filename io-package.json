@@ -64,6 +64,7 @@
     "pollingInterval": 60,
     "reconnectInterval": 10,
     "beep": true,
+    "exposeRawStatus": false,
     "customPolling": false,
     "pollingRequests": []
   },
