@@ -157,6 +157,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
 
     const relativeId = id.slice(this.namespace.length + 1);
+
+    if (relativeId === 'control.command') {
+      await this._handleCommandState(id, state.val);
+      return;
+    }
+
     const [, datapointId] = relativeId.split('.');
     if (!datapointId || !this.datapointById.has(datapointId)) {
       return;
@@ -226,6 +232,24 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       },
       native: {},
     });
+
+    await this.setObjectNotExistsAsync('control.command', {
+      type: 'state',
+      common: {
+        name: 'JSON command input',
+        type: 'string',
+        role: 'json',
+        read: false,
+        write: true,
+        def: '',
+      },
+      native: {},
+    });
+
+    const existingCommand = await this.getStateAsync('control.command');
+    if (!existingCommand) {
+      await this.setStateAsync('control.command', { val: '', ack: true });
+    }
 
     await this.setObjectNotExistsAsync('sensors', {
       type: 'channel',
@@ -298,6 +322,52 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       if (!existingState) {
         await this.setStateAsync(stateId, { val: null, ack: true });
       }
+    }
+  }
+
+  async _handleCommandState(stateId, rawValue) {
+    if (!this.bridge) {
+      this.log.warn('Ignoring command because bridge is not connected yet');
+      return;
+    }
+
+    let parsedValue = rawValue;
+
+    if (typeof parsedValue === 'string') {
+      const trimmed = parsedValue.trim();
+      if (!trimmed) {
+        await this.setStateAsync(stateId, { val: '', ack: true });
+        return;
+      }
+
+      try {
+        parsedValue = JSON.parse(trimmed);
+      } catch (error) {
+        this.log.error(`Failed to parse JSON command: ${error.message}`);
+        this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
+        return;
+      }
+    }
+
+    if (!parsedValue || typeof parsedValue !== 'object' || Array.isArray(parsedValue)) {
+      this.log.error('JSON command must be an object with key/value pairs');
+      this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
+      return;
+    }
+
+    try {
+      const updates = await this.bridge.sendCommand(parsedValue);
+      if (updates && typeof updates === 'object' && Object.keys(updates).length > 0) {
+        await this._applyStatusUpdate(updates);
+      }
+
+      await this.setStateAsync(stateId, {
+        val: JSON.stringify(parsedValue),
+        ack: true,
+      });
+    } catch (error) {
+      this.log.error(`Failed to execute JSON command: ${error.message}`);
+      this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
     }
   }
 

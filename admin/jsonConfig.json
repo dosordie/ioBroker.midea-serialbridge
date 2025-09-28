@@ -1,11 +1,11 @@
 {
   "type": "tabs",
-  "items": {
-    "connection": {
+  "items": [
+    {
       "type": "panel",
       "label": "general",
-      "items": {
-        "host": {
+      "items": [
+        {
           "type": "text",
           "label": "host",
           "attr": "host",
@@ -15,7 +15,7 @@
           "sm": 6,
           "md": 4
         },
-        "port": {
+        {
           "type": "number",
           "label": "port",
           "attr": "port",
@@ -27,7 +27,7 @@
           "sm": 6,
           "md": 4
         },
-        "pollingInterval": {
+        {
           "type": "number",
           "label": "pollingInterval",
           "attr": "pollingInterval",
@@ -40,7 +40,7 @@
           "sm": 6,
           "md": 4
         },
-        "reconnectInterval": {
+        {
           "type": "number",
           "label": "reconnectInterval",
           "attr": "reconnectInterval",
@@ -53,7 +53,7 @@
           "sm": 6,
           "md": 4
         },
-        "beep": {
+        {
           "type": "checkbox",
           "label": "beep",
           "attr": "beep",
@@ -63,13 +63,13 @@
           "sm": 6,
           "md": 4
         }
-      }
+      ]
     },
-    "polling": {
+    {
       "type": "panel",
       "label": "polling",
-      "items": {
-        "customPolling": {
+      "items": [
+        {
           "type": "checkbox",
           "label": "customPolling",
           "attr": "customPolling",
@@ -77,7 +77,7 @@
           "help": "customPolling_help",
           "xs": 12
         },
-        "requests": {
+        {
           "type": "table",
           "attr": "pollingRequests",
           "label": "pollingRequests",
@@ -110,9 +110,9 @@
             }
           ]
         }
-      }
+      ]
     }
-  },
+  ],
   "translations": {
     "general": "general",
     "host": "host",

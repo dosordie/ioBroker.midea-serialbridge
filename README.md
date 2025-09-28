@@ -14,6 +14,7 @@ This adapter allows you to control Midea HVAC units locally using the well known
 * Connect to a TCP serial bridge (default port 23)
 * Poll the device for specific datapoints at configurable intervals
 * Write commands from ioBroker states back to the air conditioner
+* Send raw JSON commands to the bridge for advanced control scenarios
 * Automatic reconnects and error handling
 * JSON based configuration UI similar to [ioBroker.gira-endpoint](https://github.com/dosordie/ioBroker.gira-endpoint)
 
@@ -43,6 +44,16 @@ The following datapoints are available out of the box:
 | `sleepMode` | Sleep mode | ✓ | ✓ |
 
 Whenever you change a writable state in ioBroker the adapter forwards the command to the bridge immediately.
+
+### JSON command input
+
+For advanced use cases you can send arbitrary command payloads to the serial bridge through the state `control.command`. The state expects a JSON object string that is passed as-is to the bridge (with the adapter optionally adding `"beep": false` when the configuration disables beeps). Example:
+
+```
+{"beep": false, "temperatureSetpoint": 30}
+```
+
+Successful commands are acknowledged automatically and the resulting status update is reflected in the other datapoints.
 
 ## Known limitations
 
