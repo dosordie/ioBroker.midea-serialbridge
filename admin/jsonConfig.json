@@ -62,6 +62,16 @@
           "xs": 12,
           "sm": 6,
           "md": 4
+        },
+        {
+          "type": "checkbox",
+          "label": "exposeRawStatus",
+          "attr": "exposeRawStatus",
+          "default": false,
+          "help": "exposeRawStatus_help",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
         }
       ]
     },
@@ -135,6 +145,8 @@
     "customPolling_help": "customPolling_help",
     "getStatus": "getStatus",
     "getCapabilities": "getCapabilities",
-    "getPowerUsage": "getPowerUsage"
+    "getPowerUsage": "getPowerUsage",
+    "exposeRawStatus": "exposeRawStatus",
+    "exposeRawStatus_help": "exposeRawStatus_help"
   }
 }

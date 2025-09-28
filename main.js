@@ -34,6 +34,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this.datapointById = new Map(DATA_POINTS.map((dp) => [dp.id, dp]));
     this._terminating = false;
     this._knownCapabilityStates = new Set();
+    this._knownRawStatusStates = new Set();
 
     this._unhandledRejectionHandler = (reason) => {
       const message = this._formatError(reason);
@@ -255,6 +256,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       type: 'channel',
       common: {
         name: 'Sensors',
+      },
+      native: {},
+    });
+
+    await this.setObjectNotExistsAsync('statusRaw', {
+      type: 'channel',
+      common: {
+        name: 'Raw status values',
       },
       native: {},
     });
@@ -588,6 +597,16 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
+    if (typeof this.config.exposeRawStatus !== 'boolean') {
+      const rawValue = this.config.exposeRawStatus;
+      const normalizedExposeRawStatus =
+        rawValue === true || rawValue === 'true' || rawValue === 1 || rawValue === '1';
+      if (normalizedExposeRawStatus !== rawValue || rawValue === undefined) {
+        this.config.exposeRawStatus = normalizedExposeRawStatus;
+        changed = true;
+      }
+    }
+
     const normalizedConfig = this._deepClone(this.config);
     const configChanged = changed || !this._deepEqual(originalConfig, normalizedConfig);
 
@@ -738,6 +757,10 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         ? Object.entries(status.values)
         : Object.entries(status);
 
+    if (this.config && this.config.exposeRawStatus) {
+      await this._applyRawStatus(entries);
+    }
+
     for (const [datapointId, value] of entries) {
       if (!this.datapointById.has(datapointId)) {
         continue;
@@ -754,6 +777,27 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         this.log.debug(
           `Failed to update state ${datapointId} from status frame: ${this._formatError(error)}`
         );
+      }
+    }
+  }
+
+  async _applyRawStatus(entries) {
+    for (const [key, value] of entries) {
+      if (this.datapointById.has(key)) {
+        continue;
+      }
+
+      try {
+        const normalized = this._normalizeRawStatusValue(value);
+        if (!normalized) {
+          continue;
+        }
+
+        const { value: normalizedValue, type, role } = normalized;
+        await this._ensureRawStatusState(key, type, role);
+        await this.setStateAsync(`statusRaw.${key}`, { val: normalizedValue, ack: true });
+      } catch (error) {
+        this.log.debug(`Failed to update raw status ${key}: ${this._formatError(error)}`);
       }
     }
   }
@@ -801,6 +845,64 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     } catch (error) {
       this.log.debug(`Failed to update power usage state: ${this._formatError(error)}`);
     }
+  }
+
+  async _ensureRawStatusState(key, type, role) {
+    if (this._knownRawStatusStates.has(key)) {
+      return;
+    }
+
+    await this.setObjectNotExistsAsync(`statusRaw.${key}`, {
+      type: 'state',
+      common: {
+        name: key,
+        type,
+        role,
+        read: true,
+        write: false,
+      },
+      native: {},
+    });
+
+    this._knownRawStatusStates.add(key);
+  }
+
+  _normalizeRawStatusValue(value) {
+    if (value === undefined) {
+      return null;
+    }
+
+    if (typeof value === 'boolean') {
+      return { value: !!value, type: 'boolean', role: 'indicator' };
+    }
+
+    if (typeof value === 'number') {
+      const numeric = Number(value);
+      if (Number.isNaN(numeric)) {
+        return null;
+      }
+      return { value: numeric, type: 'number', role: 'value' };
+    }
+
+    if (typeof value === 'bigint') {
+      return { value: value.toString(), type: 'string', role: 'text' };
+    }
+
+    if (typeof value === 'string') {
+      return { value: value, type: 'string', role: 'text' };
+    }
+
+    if (typeof value === 'object') {
+      let serialized;
+      try {
+        serialized = JSON.stringify(value);
+      } catch (error) {
+        serialized = String(value);
+      }
+      return { value: serialized, type: 'string', role: 'json' };
+    }
+
+    return { value: String(value), type: 'string', role: 'text' };
   }
 
   async _ensureCapabilityState(key, value) {

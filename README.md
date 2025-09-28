@@ -17,6 +17,7 @@ This adapter allows you to control Midea HVAC units locally using the well known
 * Send raw JSON commands to the bridge for advanced control scenarios
 * Automatic reconnects and error handling
 * JSON based configuration UI similar to [ioBroker.gira-endpoint](https://github.com/dosordie/ioBroker.gira-endpoint)
+* Optional exposure of all raw status properties as read-only ioBroker states
 
 ## Prerequisites
 
@@ -26,7 +27,7 @@ This adapter allows you to control Midea HVAC units locally using the well known
 
 ## Configuration
 
-Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge. You can enable or disable polling for each datapoint and configure custom intervals. If no custom interval is specified, the global interval is used.
+Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge. You can enable or disable polling for each datapoint and configure custom intervals. If no custom interval is specified, the global interval is used. Enable the checkbox **Expose raw status datapoints** to automatically create read-only states for every property reported by the device (e.g. timers, lights or diagnostic flags).
 
 The following datapoints are available out of the box:
 

@@ -10,6 +10,8 @@
   "reconnectInterval_help": "Time in seconds before trying to reconnect after a disconnection.",
   "beep": "Signalton bei Befehlen",
   "beep_help": "Deaktivieren, um das Piepen des Geräts bei Befehlen zu verhindern.",
+  "exposeRawStatus": "Alle Roh-Statuswerte bereitstellen",
+  "exposeRawStatus_help": "Legt für jede vom Gerät gemeldete Eigenschaft einen ioBroker-Datenpunkt an.",
   "polling": "Polling",
   "pollingRequests": "Befehle",
   "pollingRequests_help": "Wählen Sie aus, welche Befehle zyklisch ausgeführt werden und konfigurieren Sie individuelle Intervalle.",
