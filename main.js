@@ -94,19 +94,19 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
       this.bridge.on('statusData', (values) => {
         this._applyStatusUpdate(values).catch((error) => {
-          this.log.debug(`Failed to process status update: ${error.message}`);
+          this.log.debug(`Failed to process status update: ${this._formatError(error)}`);
         });
       });
 
       this.bridge.on('capabilities', (capabilities) => {
         this._applyCapabilities(capabilities).catch((error) => {
-          this.log.debug(`Failed to process capabilities update: ${error.message}`);
+          this.log.debug(`Failed to process capabilities update: ${this._formatError(error)}`);
         });
       });
 
       this.bridge.on('powerUsage', (usage) => {
         this._applyPowerUsage(usage).catch((error) => {
-          this.log.debug(`Failed to process power usage update: ${error.message}`);
+          this.log.debug(`Failed to process power usage update: ${this._formatError(error)}`);
         });
       });
 
@@ -184,7 +184,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         await this.setStateAsync(id, { val: value, ack: true });
       }
     } catch (error) {
-      this.log.error(`Failed to write ${datapointId}: ${error.message}`);
+      this.log.error(`Failed to write ${datapointId}: ${this._formatError(error)}`);
       this.setState(id, { val: state.val, ack: false, q: 0x21 });
     }
   }
@@ -343,7 +343,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       try {
         parsedValue = JSON.parse(trimmed);
       } catch (error) {
-        this.log.error(`Failed to parse JSON command: ${error.message}`);
+        this.log.error(`Failed to parse JSON command: ${this._formatError(error)}`);
         this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
         return;
       }
@@ -366,7 +366,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         ack: true,
       });
     } catch (error) {
-      this.log.error(`Failed to execute JSON command: ${error.message}`);
+      this.log.error(`Failed to execute JSON command: ${this._formatError(error)}`);
       this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
     }
   }
@@ -751,7 +751,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
           ack: true,
         });
       } catch (error) {
-        this.log.debug(`Failed to update state ${datapointId} from status frame: ${error.message}`);
+        this.log.debug(
+          `Failed to update state ${datapointId} from status frame: ${this._formatError(error)}`
+        );
       }
     }
   }
@@ -767,7 +769,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         ack: true,
       });
     } catch (error) {
-      this.log.debug(`Failed to update capabilities.raw: ${error.message}`);
+      this.log.debug(`Failed to update capabilities.raw: ${this._formatError(error)}`);
     }
 
     for (const [key, value] of Object.entries(capabilities)) {
@@ -775,7 +777,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         await this._ensureCapabilityState(key, value);
         await this.setStateAsync(`capabilities.${key}`, { val: value, ack: true });
       } catch (error) {
-        this.log.debug(`Failed to update capability ${key}: ${error.message}`);
+        this.log.debug(`Failed to update capability ${key}: ${this._formatError(error)}`);
       }
     }
   }
@@ -797,7 +799,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         ack: true,
       });
     } catch (error) {
-      this.log.debug(`Failed to update power usage state: ${error.message}`);
+      this.log.debug(`Failed to update power usage state: ${this._formatError(error)}`);
     }
   }
 
