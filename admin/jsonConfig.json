@@ -10,7 +10,7 @@
           "label": "host",
           "attr": "host",
           "default": "",
-          "placeholder": "192.168.1.100",
+          "placeholder": "192.168.160.230",
           "help": "host_help",
           "xs": 12,
           "sm": 6,
