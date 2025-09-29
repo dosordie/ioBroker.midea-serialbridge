@@ -356,16 +356,16 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
       const updateCommon = { ...common };
       if (!datapoint.states) {
-        updateCommon.states = null;
+        delete updateCommon.states;
       }
       if (typeof datapoint.min !== 'number') {
-        updateCommon.min = null;
+        delete updateCommon.min;
       }
       if (typeof datapoint.max !== 'number') {
-        updateCommon.max = null;
+        delete updateCommon.max;
       }
       if (typeof datapoint.step !== 'number') {
-        updateCommon.step = null;
+        delete updateCommon.step;
       }
       await this.extendObjectAsync(stateId, { common: updateCommon });
 
@@ -746,12 +746,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
           if (representation.fanSpeed) {
             clone.type = 'number';
             clone.states = {
-              0: 'auto',
-              1: 'silent',
-              2: 'low',
-              3: 'medium',
-              4: 'high',
-              5: 'fixed',
+              20: 'silent',
+              40: 'low',
+              60: 'medium',
+              80: 'high',
+              101: 'fixed',
+              102: 'auto',
             };
           }
           break;
