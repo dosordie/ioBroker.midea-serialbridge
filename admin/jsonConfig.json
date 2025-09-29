@@ -88,6 +88,36 @@
           "help": "customPolling_help",
           "xs": 12
         },
+        "modeAsNumber": {
+          "type": "checkbox",
+          "label": "modeAsNumber",
+          "attr": "modeAsNumber",
+          "default": false,
+          "help": "modeAsNumber_help",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "fanSpeedAsNumber": {
+          "type": "checkbox",
+          "label": "fanSpeedAsNumber",
+          "attr": "fanSpeedAsNumber",
+          "default": false,
+          "help": "fanSpeedAsNumber_help",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "swingModeAsNumber": {
+          "type": "checkbox",
+          "label": "swingModeAsNumber",
+          "attr": "swingModeAsNumber",
+          "default": false,
+          "help": "swingModeAsNumber_help",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
         "pollingRequests": {
           "type": "table",
           "attr": "pollingRequests",
@@ -144,6 +174,12 @@
     "interval": "interval",
     "customPolling": "customPolling",
     "customPolling_help": "customPolling_help",
+    "modeAsNumber": "modeAsNumber",
+    "modeAsNumber_help": "modeAsNumber_help",
+    "fanSpeedAsNumber": "fanSpeedAsNumber",
+    "fanSpeedAsNumber_help": "fanSpeedAsNumber_help",
+    "swingModeAsNumber": "swingModeAsNumber",
+    "swingModeAsNumber_help": "swingModeAsNumber_help",
     "getStatus": "getStatus",
     "getCapabilities": "getCapabilities",
     "getPowerUsage": "getPowerUsage",
