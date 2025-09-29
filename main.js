@@ -368,11 +368,47 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         delete updateCommon.step;
       }
       await this.extendObjectAsync(stateId, { common: updateCommon });
+      await this._normalizeStateBoundaries(stateId, datapoint);
 
       const existingState = await this.getStateAsync(stateId);
       if (!existingState) {
         await this.setStateAsync(stateId, { val: null, ack: true });
       }
+    }
+  }
+
+  async _normalizeStateBoundaries(stateId, datapoint) {
+    try {
+      const object = await this.getObjectAsync(stateId);
+      if (!object || !object.common) {
+        return;
+      }
+
+      const updatedCommon = { ...object.common };
+      let changed = false;
+
+      for (const key of ['min', 'max', 'step']) {
+        if (typeof datapoint[key] === 'number') {
+          if (updatedCommon[key] !== datapoint[key]) {
+            updatedCommon[key] = datapoint[key];
+            changed = true;
+          }
+        } else if (Object.prototype.hasOwnProperty.call(updatedCommon, key)) {
+          delete updatedCommon[key];
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        await this.setObjectAsync(stateId, {
+          ...object,
+          common: updatedCommon,
+        });
+      }
+    } catch (error) {
+      this.log.warn(
+        `Failed to normalize state boundaries for ${stateId}: ${this._formatError(error)}`
+      );
     }
   }
 
