@@ -1,11 +1,11 @@
 {
   "type": "tabs",
-  "items": [
-    {
+  "items": {
+    "general": {
       "type": "panel",
       "label": "general",
-      "items": [
-        {
+      "items": {
+        "host": {
           "type": "text",
           "label": "host",
           "attr": "host",
@@ -16,7 +16,7 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "port": {
           "type": "number",
           "label": "port",
           "attr": "port",
@@ -28,7 +28,7 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "pollingInterval": {
           "type": "number",
           "label": "pollingInterval",
           "attr": "pollingInterval",
@@ -41,7 +41,7 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "reconnectInterval": {
           "type": "number",
           "label": "reconnectInterval",
           "attr": "reconnectInterval",
@@ -54,7 +54,7 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "beep": {
           "type": "checkbox",
           "label": "beep",
           "attr": "beep",
@@ -64,7 +64,7 @@
           "sm": 6,
           "md": 4
         },
-        {
+        "exposeRawStatus": {
           "type": "checkbox",
           "label": "exposeRawStatus",
           "attr": "exposeRawStatus",
@@ -74,13 +74,13 @@
           "sm": 6,
           "md": 4
         }
-      ]
+      }
     },
-    {
+    "polling": {
       "type": "panel",
       "label": "polling",
-      "items": [
-        {
+      "items": {
+        "customPolling": {
           "type": "checkbox",
           "label": "customPolling",
           "attr": "customPolling",
@@ -88,7 +88,7 @@
           "help": "customPolling_help",
           "xs": 12
         },
-        {
+        "pollingRequests": {
           "type": "table",
           "attr": "pollingRequests",
           "label": "pollingRequests",
@@ -121,9 +121,9 @@
             }
           ]
         }
-      ]
+      }
     }
-  ],
+  },
   "translations": {
     "general": "general",
     "host": "host",
