@@ -42,20 +42,13 @@
       "config": "json"
     },
     "readme": "https://github.com/yourname/ioBroker.midea_serialbridge/blob/main/README.md",
-    "keywords": [
-      "midea",
-      "hvac",
-      "serial",
-      "climate"
-    ],
+    "keywords": ["midea", "hvac", "serial", "climate"],
     "dependencies": [
       {
         "js-controller": ">=3.3.0"
       }
     ],
-    "authors": [
-      "Your Name <you@example.com>"
-    ],
+    "authors": ["Your Name <you@example.com>"],
     "type": "climate-control"
   },
   "native": {
@@ -65,6 +58,9 @@
     "reconnectInterval": 10,
     "beep": true,
     "exposeRawStatus": false,
+    "modeAsNumber": false,
+    "fanSpeedAsNumber": false,
+    "swingModeAsNumber": false,
     "customPolling": false,
     "pollingRequests": []
   },

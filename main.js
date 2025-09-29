@@ -3,7 +3,29 @@
 const utils = require('@iobroker/adapter-core');
 const { MideaSerialBridge } = require('./lib/midea-serial-bridge');
 const { DATA_POINTS } = require('./lib/datapoints');
+const {
+  MODE_ALIASES,
+  MODE_NAME_TO_VALUE,
+  MODE_NAME_TO_LEGACY_VALUE,
+  MODE_VALUE_TO_NAME,
+  LEGACY_MODE_NUMBERS,
+  FAN_SPEED_ALIASES,
+  FAN_SPEED_NAME_TO_VALUE,
+  FAN_SPEED_VALUE_TO_NAME,
+  SWING_ALIASES,
+  SWING_NAME_TO_VALUE,
+  SWING_VALUE_TO_NAME,
+  normalizeString,
+} = require('./lib/value-mappings');
 const { EXIT_CODES } = utils;
+
+function cloneDatapointDefinition(datapoint) {
+  const clone = { ...datapoint };
+  if (datapoint.states) {
+    clone.states = { ...datapoint.states };
+  }
+  return clone;
+}
 
 const POLLING_METHODS = [
   {
@@ -31,10 +53,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
     this.bridge = null;
     this.pollTimers = new Map();
-    this.datapointById = new Map(DATA_POINTS.map((dp) => [dp.id, dp]));
+    this.datapoints = DATA_POINTS.map((dp) => cloneDatapointDefinition(dp));
+    this.datapointById = new Map(this.datapoints.map((dp) => [dp.id, dp]));
     this._terminating = false;
     this._knownCapabilityStates = new Set();
     this._knownRawStatusStates = new Set();
+    this.valueRepresentation = { mode: false, fanSpeed: false, swingMode: false };
 
     this._unhandledRejectionHandler = (reason) => {
       const message = this._formatError(reason);
@@ -65,6 +89,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         await this._persistNormalizedConfig(normalizationResult.normalizedConfig);
       }
 
+      this._applyValueRepresentationConfig();
+
       if (!this.config || !this.config.host) {
         this.log.error('No host configured. Please enter the IP address of the serial bridge.');
         return;
@@ -79,6 +105,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         reconnectInterval: (Number(this.config.reconnectInterval) || 10) * 1000,
         log: this.log,
         beepOnCommand: this.config.beep !== false,
+        valueRepresentation: this.valueRepresentation,
       });
 
       this.bridge.on('connected', () => {
@@ -294,7 +321,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       await this.setStateAsync('capabilities.raw', { val: '', ack: true });
     }
 
-    for (const datapoint of DATA_POINTS) {
+    for (const datapoint of this.datapoints) {
       const stateId = `${datapoint.channel}.${datapoint.id}`;
       const common = {
         name: datapoint.name,
@@ -327,6 +354,21 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         native: {},
       });
 
+      const updateCommon = { ...common };
+      if (!datapoint.states) {
+        updateCommon.states = null;
+      }
+      if (typeof datapoint.min !== 'number') {
+        updateCommon.min = null;
+      }
+      if (typeof datapoint.max !== 'number') {
+        updateCommon.max = null;
+      }
+      if (typeof datapoint.step !== 'number') {
+        updateCommon.step = null;
+      }
+      await this.extendObjectAsync(stateId, { common: updateCommon });
+
       const existingState = await this.getStateAsync(stateId);
       if (!existingState) {
         await this.setStateAsync(stateId, { val: null, ack: true });
@@ -349,8 +391,10 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         return;
       }
 
+      const normalizedJson = trimmed.includes('?') ? trimmed.replace(/\?/g, '"') : trimmed;
+
       try {
-        parsedValue = JSON.parse(trimmed);
+        parsedValue = JSON.parse(normalizedJson);
       } catch (error) {
         this.log.error(`Failed to parse JSON command: ${this._formatError(error)}`);
         this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
@@ -649,6 +693,19 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       }
     }
 
+    const normalizeBoolean = (value) =>
+      value === true || value === 'true' || value === 1 || value === '1';
+
+    for (const key of ['modeAsNumber', 'fanSpeedAsNumber', 'swingModeAsNumber']) {
+      if (typeof this.config[key] !== 'boolean') {
+        const normalized = normalizeBoolean(this.config[key]);
+        if (normalized !== this.config[key]) {
+          this.config[key] = normalized;
+          changed = true;
+        }
+      }
+    }
+
     const normalizedConfig = this._deepClone(this.config);
     const configChanged = changed || !this._deepEqual(originalConfig, normalizedConfig);
 
@@ -656,6 +713,67 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed: configChanged,
       normalizedConfig,
     };
+  }
+
+  _applyValueRepresentationConfig() {
+    const representation = {
+      mode: !!(this.config && this.config.modeAsNumber),
+      fanSpeed: !!(this.config && this.config.fanSpeedAsNumber),
+      swingMode: !!(this.config && this.config.swingModeAsNumber),
+    };
+
+    this.valueRepresentation = representation;
+
+    this.datapoints = DATA_POINTS.map((datapoint) => {
+      const clone = cloneDatapointDefinition(datapoint);
+
+      switch (clone.id) {
+        case 'mode':
+          if (representation.mode) {
+            clone.type = 'number';
+            clone.states = {
+              0: 'auto (legacy)',
+              1: 'auto',
+              2: 'cool',
+              3: 'dry',
+              4: 'heat',
+              5: 'fanonly',
+              6: 'customdry',
+            };
+          }
+          break;
+        case 'fanSpeed':
+          if (representation.fanSpeed) {
+            clone.type = 'number';
+            clone.states = {
+              0: 'auto',
+              1: 'silent',
+              2: 'low',
+              3: 'medium',
+              4: 'high',
+              5: 'fixed',
+            };
+          }
+          break;
+        case 'swingMode':
+          if (representation.swingMode) {
+            clone.type = 'number';
+            clone.states = {
+              0: 'off',
+              1: 'vertical',
+              2: 'horizontal',
+              3: 'both',
+            };
+          }
+          break;
+        default:
+          break;
+      }
+
+      return clone;
+    });
+
+    this.datapointById = new Map(this.datapoints.map((datapoint) => [datapoint.id, datapoint]));
   }
 
   async _persistNormalizedConfig(normalizedConfig) {
@@ -990,11 +1108,18 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   }
 
   _normalizeWriteValue(datapoint, value) {
+    if (['mode', 'fanSpeed', 'swingMode'].includes(datapoint.id)) {
+      return this._normalizeEnumWriteValue(datapoint.id, value);
+    }
+
     if (datapoint.type === 'boolean') {
       return value === 'true' || value === true || value === 1;
     }
 
     if (datapoint.type === 'number') {
+      if (value === null || value === undefined || value === '') {
+        return null;
+      }
       const parsed = Number(value);
       if (Number.isNaN(parsed)) {
         throw new Error(`Invalid numeric value ${value}`);
@@ -1012,13 +1137,208 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     return value;
   }
 
+  _normalizeEnumWriteValue(datapointId, rawValue) {
+    const useNumeric = !!(this.valueRepresentation && this.valueRepresentation[datapointId]);
+
+    if (rawValue === null || rawValue === undefined) {
+      return useNumeric ? null : '';
+    }
+
+    if (useNumeric) {
+      const numericValue = this._convertToNumericRepresentation(datapointId, rawValue);
+      if (numericValue !== undefined) {
+        return numericValue;
+      }
+    } else {
+      const stringValue = this._convertToStringRepresentation(datapointId, rawValue);
+      if (stringValue !== undefined) {
+        return stringValue;
+      }
+    }
+
+    if (typeof rawValue === 'string') {
+      return rawValue.trim();
+    }
+
+    return rawValue;
+  }
+
+  _convertToNumericRepresentation(datapointId, rawValue) {
+    if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
+      return rawValue;
+    }
+
+    if (typeof rawValue === 'string') {
+      const trimmed = rawValue.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      const numeric = Number(trimmed);
+      if (!Number.isNaN(numeric)) {
+        return numeric;
+      }
+
+      const normalizedName = this._normalizeEnumName(datapointId, trimmed);
+      if (normalizedName) {
+        const mapped = this._mapEnumNameToNumber(datapointId, normalizedName);
+        if (mapped !== undefined) {
+          return mapped;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  _convertToStringRepresentation(datapointId, rawValue) {
+    if (typeof rawValue === 'string') {
+      const trimmed = rawValue.trim();
+      if (!trimmed) {
+        return '';
+      }
+
+      const normalizedName = this._normalizeEnumName(datapointId, trimmed);
+      if (normalizedName) {
+        return normalizedName;
+      }
+
+      const numeric = Number(trimmed);
+      if (!Number.isNaN(numeric)) {
+        const mapped = this._mapEnumNumberToName(datapointId, numeric);
+        if (mapped !== undefined) {
+          return mapped;
+        }
+      }
+
+      return trimmed;
+    }
+
+    if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
+      const mapped = this._mapEnumNumberToName(datapointId, rawValue);
+      if (mapped !== undefined) {
+        return mapped;
+      }
+      return String(rawValue);
+    }
+
+    return undefined;
+  }
+
+  _normalizeEnumName(datapointId, value) {
+    const normalized = normalizeString(value);
+    if (!normalized) {
+      return undefined;
+    }
+
+    switch (datapointId) {
+      case 'mode':
+        if (MODE_ALIASES[normalized]) {
+          return MODE_ALIASES[normalized];
+        }
+        if (MODE_VALUE_TO_NAME[Number(normalized)]) {
+          return MODE_VALUE_TO_NAME[Number(normalized)];
+        }
+        if (LEGACY_MODE_NUMBERS[Number(normalized)]) {
+          return LEGACY_MODE_NUMBERS[Number(normalized)];
+        }
+        if (
+          MODE_NAME_TO_VALUE[normalized] !== undefined ||
+          MODE_NAME_TO_LEGACY_VALUE[normalized] !== undefined
+        ) {
+          return normalized;
+        }
+        break;
+      case 'fanSpeed':
+        if (FAN_SPEED_ALIASES[normalized]) {
+          return FAN_SPEED_ALIASES[normalized];
+        }
+        if (FAN_SPEED_NAME_TO_VALUE[normalized] !== undefined) {
+          return normalized;
+        }
+        break;
+      case 'swingMode':
+        if (SWING_ALIASES[normalized]) {
+          const alias = SWING_ALIASES[normalized];
+          return this._mapSwingAliasToName(alias);
+        }
+        if (SWING_NAME_TO_VALUE[normalized] !== undefined) {
+          return normalized;
+        }
+        break;
+      default:
+        break;
+    }
+
+    return undefined;
+  }
+
+  _mapEnumNameToNumber(datapointId, name) {
+    switch (datapointId) {
+      case 'mode':
+        if (MODE_NAME_TO_VALUE[name] !== undefined) {
+          return MODE_NAME_TO_VALUE[name];
+        }
+        if (MODE_NAME_TO_LEGACY_VALUE[name] !== undefined) {
+          return MODE_NAME_TO_LEGACY_VALUE[name];
+        }
+        return undefined;
+      case 'fanSpeed':
+        return FAN_SPEED_NAME_TO_VALUE[name];
+      case 'swingMode':
+        return SWING_NAME_TO_VALUE[name];
+      default:
+        return undefined;
+    }
+  }
+
+  _mapEnumNumberToName(datapointId, numeric) {
+    if (!Number.isFinite(numeric)) {
+      return undefined;
+    }
+    const value = Number(numeric);
+
+    switch (datapointId) {
+      case 'mode':
+        return MODE_VALUE_TO_NAME[value] || LEGACY_MODE_NUMBERS[value];
+      case 'fanSpeed':
+        return FAN_SPEED_VALUE_TO_NAME[value];
+      case 'swingMode':
+        return SWING_VALUE_TO_NAME[value];
+      default:
+        return undefined;
+    }
+  }
+
+  _mapSwingAliasToName(alias) {
+    if (!alias || typeof alias !== 'object') {
+      return undefined;
+    }
+    const up = !!alias.updownFan;
+    const left = !!alias.leftrightFan;
+    if (up && left) {
+      return 'both';
+    }
+    if (up) {
+      return 'vertical';
+    }
+    if (left) {
+      return 'horizontal';
+    }
+    return 'off';
+  }
+
   _normalizeReadValue(datapoint, value) {
     if (datapoint.type === 'boolean') {
       return !!value;
     }
 
     if (datapoint.type === 'number') {
-      return Number(value);
+      if (value === null || value === undefined || value === '') {
+        return null;
+      }
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? null : parsed;
     }
 
     if (datapoint.type === 'string') {
