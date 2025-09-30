@@ -1,8 +1,8 @@
 <img src="admin/midea_serialbridge.svg" alt="Logo" width="120"/>
-# ioBroker.midea_serialbridge
+# ioBroker.midea-serialbridge
 
 
-## midea_serialbridge adapter for ioBroker
+## midea-serialbridge adapter for ioBroker
 
 This adapter allows you to control Midea HVAC units locally using the well known serial bridge interface. It is based on the logic of the [node-mideahvac](https://github.com/reneklootwijk/node-mideahvac) project and exposes all relevant datapoints to ioBroker. Cloud functionality has intentionally been left out so that the devices can be operated without an external connection.
 
@@ -13,7 +13,7 @@ This adapter allows you to control Midea HVAC units locally using the well known
 * Write commands from ioBroker states back to the air conditioner
 * Send raw JSON commands to the bridge for advanced control scenarios
 * Automatic reconnects and error handling
-* JSON based configuration UI similar to [ioBroker.gira-endpoint](https://github.com/dosordie/ioBroker.gira-endpoint)
+* JSON based configuration UI
 * Optional exposure of all raw status properties as read-only ioBroker states
 
 ## Prerequisites
@@ -62,8 +62,15 @@ Successful commands are acknowledged automatically and the resulting status upda
 
 See [CHANGELOG.md](CHANGELOG.md).
 
+## 💙 Unterstützung
+
+Ich bastle an diesem Adapter in meiner Freizeit.  
+Wenn er dir gefällt oder dir weiterhilft, freue ich mich über eine kleine Spende:
+
+[![Spenden via PayPal](https://img.shields.io/badge/Spenden-PayPal-blue.svg?logo=paypal)](https://www.paypal.com/paypalme/AuhuberD)
+
 ## License
 
-MIT License
+[GPLv3](LICENSE)
 
-Copyright (c) 2025 Your Name
+Copyright (c) 2025 DosOrDie
