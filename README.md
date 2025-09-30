@@ -1,4 +1,4 @@
-<img src="admin/midea_serialbridge.svg" alt="Logo" width="120"/>
+<img src="admin/midea-serialbridge.svg" alt="Logo" width="120"/>
 # ioBroker.midea-serialbridge
 
 
@@ -18,8 +18,8 @@ This adapter allows you to control Midea HVAC units locally using the well known
 
 ## Prerequisites
 
-* ioBroker host running js-controller 3.3 or newer
-* Node.js 16 or newer (18 recommended)
+* ioBroker host running js-controller 5.0.19 or newer
+* Node.js 18 or newer
 * A working Midea serial bridge that is reachable from the ioBroker host
 
 ## Configuration
@@ -59,6 +59,10 @@ Successful commands are acknowledged automatically and the resulting status upda
 * The adapter currently supports a single indoor unit per instance.
 
 ## Changelog
+
+### 0.0.1
+
+* Initial release of the adapter.
 
 See [CHANGELOG.md](CHANGELOG.md).
 

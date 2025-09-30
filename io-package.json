@@ -1,6 +1,6 @@
 {
   "common": {
-    "name": "midea_serialbridge",
+    "name": "midea-serialbridge",
     "version": "0.0.1",
     "title": "Midea Serial Bridge",
     "titleLang": {
@@ -31,7 +31,8 @@
     },
     "platform": "Javascript/Node.js",
     "mode": "daemon",
-    "icon": "midea_serialbridge.svg",
+    "icon": "midea-serialbridge.svg",
+    "extIcon": "https://raw.githubusercontent.com/dosordie/ioBroker.midea-serialbridge/main/admin/midea-serialbridge.svg",
     "enabled": true,
     "loglevel": "info",
     "tier": 2,
@@ -41,14 +42,33 @@
     "adminUI": {
       "config": "json"
     },
-    "readme": "https://github.com/yourname/ioBroker.midea_serialbridge/blob/main/README.md",
+    "readme": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/README.md",
     "keywords": ["midea", "hvac", "serial", "climate"],
     "dependencies": [
       {
-        "js-controller": ">=3.3.0"
+        "js-controller": ">=5.0.19"
       }
     ],
-    "authors": ["Your Name <you@example.com>"],
+    "authors": ["dosordie <info@dosordie.de>"],
+    "licenseInformation": {
+      "license": "MIT",
+      "url": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/LICENSE"
+    },
+    "news": {
+      "0.0.1": {
+        "en": "Initial release.",
+        "de": "Erste Veröffentlichung.",
+        "ru": "Первый выпуск.",
+        "pt": "Primeiro lançamento.",
+        "nl": "Eerste release.",
+        "fr": "Première version.",
+        "it": "Prima versione.",
+        "es": "Versión inicial.",
+        "pl": "Pierwsze wydanie.",
+        "uk": "Перший випуск.",
+        "zh-cn": "初始版本。"
+      }
+    },
     "type": "climate-control"
   },
   "native": {
