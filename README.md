@@ -60,6 +60,12 @@ Successful commands are acknowledged automatically and the resulting status upda
 
 ## Changelog
 
+### 0.0.2
+
+* Align admin JSON config layout sizes with adapter checker requirements.
+* Add required license metadata type information.
+* Remove deprecated metadata and release version 0.0.2.
+
 ### 0.0.1
 
 * Initial release of the adapter.

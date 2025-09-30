@@ -1,8 +1,7 @@
 {
   "common": {
     "name": "midea-serialbridge",
-    "version": "0.0.1",
-    "title": "Midea Serial Bridge",
+    "version": "0.0.2",
     "titleLang": {
       "en": "Midea Serial Bridge",
       "de": "Midea Serial Bridge",
@@ -52,9 +51,23 @@
     "authors": ["dosordie <info@dosordie.de>"],
     "licenseInformation": {
       "license": "MIT",
-      "url": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/LICENSE"
+      "url": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/LICENSE",
+      "type": "open-source"
     },
     "news": {
+      "0.0.2": {
+        "en": "Update admin layout and metadata to satisfy adapter checker requirements.",
+        "de": "Aktualisiert das Admin-Layout und die Metadaten für den Adapter-Checker.",
+        "ru": "Обновлена разметка админки и метаданные для требований проверяющего адаптеров.",
+        "pt": "Atualiza o layout do admin e os metadados para cumprir o verificador de adaptadores.",
+        "nl": "Adminlayout en metadata bijgewerkt om aan de adapterchecker te voldoen.",
+        "fr": "Mise à jour de la mise en page de l'admin et des métadonnées pour satisfaire le contrôleur d'adaptateur.",
+        "it": "Aggiornato layout admin e metadati per soddisfare il checker dell'adattatore.",
+        "es": "Actualiza el diseño del admin y los metadatos para satisfacer el verificador del adaptador.",
+        "pl": "Zaktualizowano układ panelu i metadane, aby spełnić wymagania kontrolera adaptera.",
+        "uk": "Оновлено макет адмінки та метадані для відповідності перевірці адаптера.",
+        "zh-cn": "更新管理布局和元数据以满足适配器检查器的要求。"
+      },
       "0.0.1": {
         "en": "Initial release.",
         "de": "Erste Veröffentlichung.",

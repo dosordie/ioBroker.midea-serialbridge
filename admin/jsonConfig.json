@@ -98,7 +98,11 @@
           "attr": "customPolling",
           "default": false,
           "help": "customPolling_help",
-          "xs": 12
+          "xs": 12,
+          "sm": 6,
+          "md": 4,
+          "lg": 4,
+          "xl": 3
         },
         "modeAsNumber": {
           "type": "checkbox",
@@ -108,7 +112,9 @@
           "help": "modeAsNumber_help",
           "xs": 12,
           "sm": 6,
-          "md": 4
+          "md": 4,
+          "lg": 4,
+          "xl": 3
         },
         "fanSpeedAsNumber": {
           "type": "checkbox",
@@ -118,7 +124,9 @@
           "help": "fanSpeedAsNumber_help",
           "xs": 12,
           "sm": 6,
-          "md": 4
+          "md": 4,
+          "lg": 4,
+          "xl": 3
         },
         "swingModeAsNumber": {
           "type": "checkbox",
@@ -128,13 +136,20 @@
           "help": "swingModeAsNumber_help",
           "xs": 12,
           "sm": 6,
-          "md": 4
+          "md": 4,
+          "lg": 4,
+          "xl": 3
         },
         "pollingRequests": {
           "type": "table",
           "attr": "pollingRequests",
           "label": "pollingRequests",
           "help": "pollingRequests_help",
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12,
           "items": [
             {
               "type": "checkbox",
