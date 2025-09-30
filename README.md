@@ -1,4 +1,4 @@
-<img src="admin/midea_serialbridge" alt="Logo" width="120"/>
+<img src="admin/midea_serialbridge.svg" alt="Logo" width="120"/>
 # ioBroker.midea_serialbridge
 
 
