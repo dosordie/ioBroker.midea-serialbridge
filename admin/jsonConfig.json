@@ -8,7 +8,6 @@
         "host": {
           "type": "text",
           "label": "host",
-          "attr": "host",
           "default": "",
           "placeholder": "192.168.160.230",
           "help": "host_help",
@@ -21,7 +20,6 @@
         "port": {
           "type": "number",
           "label": "port",
-          "attr": "port",
           "default": 23,
           "help": "port_help",
           "min": 1,
@@ -35,7 +33,6 @@
         "pollingInterval": {
           "type": "number",
           "label": "pollingInterval",
-          "attr": "pollingInterval",
           "default": 60,
           "help": "pollingInterval_help",
           "min": 5,
@@ -50,7 +47,6 @@
         "reconnectInterval": {
           "type": "number",
           "label": "reconnectInterval",
-          "attr": "reconnectInterval",
           "default": 10,
           "help": "reconnectInterval_help",
           "min": 1,
@@ -65,7 +61,6 @@
         "beep": {
           "type": "checkbox",
           "label": "beep",
-          "attr": "beep",
           "default": true,
           "help": "beep_help",
           "xs": 12,
@@ -77,7 +72,6 @@
         "exposeRawStatus": {
           "type": "checkbox",
           "label": "exposeRawStatus",
-          "attr": "exposeRawStatus",
           "default": false,
           "help": "exposeRawStatus_help",
           "xs": 12,
@@ -95,7 +89,6 @@
         "customPolling": {
           "type": "checkbox",
           "label": "customPolling",
-          "attr": "customPolling",
           "default": false,
           "help": "customPolling_help",
           "xs": 12,
@@ -107,7 +100,6 @@
         "modeAsNumber": {
           "type": "checkbox",
           "label": "modeAsNumber",
-          "attr": "modeAsNumber",
           "default": false,
           "help": "modeAsNumber_help",
           "xs": 12,
@@ -119,7 +111,6 @@
         "fanSpeedAsNumber": {
           "type": "checkbox",
           "label": "fanSpeedAsNumber",
-          "attr": "fanSpeedAsNumber",
           "default": false,
           "help": "fanSpeedAsNumber_help",
           "xs": 12,
@@ -131,7 +122,6 @@
         "swingModeAsNumber": {
           "type": "checkbox",
           "label": "swingModeAsNumber",
-          "attr": "swingModeAsNumber",
           "default": false,
           "help": "swingModeAsNumber_help",
           "xs": 12,
