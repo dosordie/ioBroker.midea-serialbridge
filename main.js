@@ -48,7 +48,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   constructor(options = {}) {
     super({
       ...options,
-      name: 'midea_serialbridge',
+      name: 'midea-serialbridge',
     });
 
     this.bridge = null;
