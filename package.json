@@ -1,6 +1,6 @@
 {
   "name": "iobroker.midea-serialbridge",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "ioBroker adapter for controlling Midea climate devices via serial bridge",
   "author": {
     "name": "dosordie"
