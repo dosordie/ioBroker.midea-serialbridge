@@ -1,9 +1,6 @@
-![Logo](admin/midea_serialbridge.svg)
+<img src="admin/midea_serialbridge" alt="Logo" width="120"/>
 # ioBroker.midea_serialbridge
 
-[![NPM version](https://img.shields.io/npm/v/iobroker.midea_serialbridge.svg)](https://www.npmjs.com/package/iobroker.midea_serialbridge)
-[![Downloads](https://img.shields.io/npm/dm/iobroker.midea_serialbridge.svg)](https://www.npmjs.com/package/iobroker.midea_serialbridge)
-[![Known Vulnerabilities](https://snyk.io/test/github/yourname/ioBroker.midea_serialbridge/badge.svg)](https://snyk.io/test/github/yourname/ioBroker.midea_serialbridge)
 
 ## midea_serialbridge adapter for ioBroker
 
