@@ -132,7 +132,6 @@
         },
         "pollingRequests": {
           "type": "table",
-          "attr": "pollingRequests",
           "label": "pollingRequests",
           "help": "pollingRequests_help",
           "xs": 12,
@@ -152,9 +151,18 @@
               "attr": "id",
               "label": "dataPoint",
               "options": [
-                { "value": "getStatus", "label": "getStatus" },
-                { "value": "getCapabilities", "label": "getCapabilities" },
-                { "value": "getPowerUsage", "label": "getPowerUsage" }
+                {
+                  "value": "getStatus",
+                  "label": "getStatus"
+                },
+                {
+                  "value": "getCapabilities",
+                  "label": "getCapabilities"
+                },
+                {
+                  "value": "getPowerUsage",
+                  "label": "getPowerUsage"
+                }
               ]
             },
             {
