@@ -120,8 +120,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         this._clearPolling();
       });
 
-      this.bridge.on('statusData', (values) => {
-        this._applyStatusUpdate(values).catch((error) => {
+      this.bridge.on('statusData', (values, rawStatus) => {
+        this._applyStatusUpdate(values, rawStatus).catch((error) => {
           this.log.debug(`Failed to process status update: ${this._formatError(error)}`);
         });
       });
@@ -943,18 +943,36 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
   }
 
-  async _applyStatusUpdate(status) {
+  _extractStatusEntries(status) {
     if (!status || typeof status !== 'object') {
+      return null;
+    }
+
+    const container = status.values && typeof status.values === 'object' ? status.values : status;
+
+    if (!container || typeof container !== 'object') {
+      return null;
+    }
+
+    try {
+      return Object.entries(container);
+    } catch (error) {
+      this.log.debug(`Failed to extract status entries: ${this._formatError(error)}`);
+      return null;
+    }
+  }
+
+  async _applyStatusUpdate(status, rawStatus) {
+    const entries = this._extractStatusEntries(status);
+    if (!entries || entries.length === 0) {
       return;
     }
 
-    const entries =
-      status.values && typeof status.values === 'object'
-        ? Object.entries(status.values)
-        : Object.entries(status);
-
     if (this.config && this.config.exposeRawStatus) {
-      await this._applyRawStatus(entries);
+      const rawEntries = this._extractStatusEntries(rawStatus) || (!rawStatus ? entries : null);
+      if (rawEntries && rawEntries.length > 0) {
+        await this._applyRawStatus(rawEntries);
+      }
     }
 
     for (const [datapointId, value] of entries) {
@@ -978,6 +996,10 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   }
 
   async _applyRawStatus(entries) {
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return;
+    }
+
     for (const [key, value] of entries) {
       if (this.datapointById.has(key)) {
         continue;
