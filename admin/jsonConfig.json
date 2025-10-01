@@ -57,7 +57,13 @@
           "md": 4,
           "lg": 4,
           "xl": 3
-        },
+        }
+      }
+    },
+    "options": {
+      "type": "panel",
+      "label": "options",
+      "items": {
         "beep": {
           "type": "checkbox",
           "label": "beep",
@@ -79,13 +85,7 @@
           "md": 4,
           "lg": 4,
           "xl": 3
-        }
-      }
-    },
-    "polling": {
-      "type": "panel",
-      "label": "polling",
-      "items": {
+        },
         "customPolling": {
           "type": "checkbox",
           "label": "customPolling",

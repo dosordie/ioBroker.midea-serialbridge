@@ -24,7 +24,7 @@ This adapter allows you to control Midea HVAC units locally using the well known
 
 ## Configuration
 
-Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge. You can enable or disable polling for each datapoint and configure custom intervals. If no custom interval is specified, the global interval is used. Enable the checkbox **Expose raw status datapoints** to automatically create read-only states for every property reported by the device (e.g. timers, lights or diagnostic flags).
+Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge on the **Connection** tab. The **Options** tab allows you to disable the audible confirmation beep, enable exposing raw status values and configure polling behaviour. You can enable or disable polling for each datapoint and configure custom intervals. If no custom interval is specified, the global interval is used. Enable the checkbox **Expose raw status datapoints** to automatically create read-only states for every property reported by the device (e.g. timers, lights or diagnostic flags). The additional states are created beneath the `statusRaw.*` channel and contain the raw values as delivered by the unit.
 
 The following datapoints are available out of the box:
 
