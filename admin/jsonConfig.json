@@ -3,14 +3,23 @@
   "items": {
     "general": {
       "type": "panel",
-      "label": "general",
+      "label": {
+        "en": "Connection",
+        "de": "Verbindung"
+      },
       "items": {
         "host": {
           "type": "text",
-          "label": "host",
+          "label": {
+            "en": "Bridge host",
+            "de": "Bridge-Host"
+          },
           "default": "",
           "placeholder": "192.168.160.230",
-          "help": "host_help",
+          "help": {
+            "en": "IP address or hostname of the ESP-based Midea serial bridge.",
+            "de": "IP-Adresse oder Hostname der ESP-basierten Midea Serial Bridge."
+          },
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -19,9 +28,15 @@
         },
         "port": {
           "type": "number",
-          "label": "port",
+          "label": {
+            "en": "Port",
+            "de": "Port"
+          },
           "default": 23,
-          "help": "port_help",
+          "help": {
+            "en": "TCP port of the serial bridge (Telnet, defaults to 23).",
+            "de": "TCP-Port der Bridge (Telnet, Standard 23)."
+          },
           "min": 1,
           "max": 65535,
           "xs": 12,
@@ -32,9 +47,15 @@
         },
         "pollingInterval": {
           "type": "number",
-          "label": "pollingInterval",
+          "label": {
+            "en": "Default polling interval",
+            "de": "Standard-Abfrageintervall"
+          },
           "default": 60,
-          "help": "pollingInterval_help",
+          "help": {
+            "en": "Base polling interval in seconds that is used when no command-specific value is configured.",
+            "de": "Basisintervall in Sekunden, das genutzt wird, wenn kein individueller Wert für einen Befehl eingestellt ist."
+          },
           "min": 5,
           "max": 3600,
           "unit": "s",
@@ -46,9 +67,15 @@
         },
         "reconnectInterval": {
           "type": "number",
-          "label": "reconnectInterval",
+          "label": {
+            "en": "Reconnect interval",
+            "de": "Wiederverbindungsintervall"
+          },
           "default": 10,
-          "help": "reconnectInterval_help",
+          "help": {
+            "en": "Delay in seconds before the adapter tries to reconnect after the connection was lost.",
+            "de": "Verzögerung in Sekunden, bevor nach einem Verbindungsabbruch erneut verbunden wird."
+          },
           "min": 1,
           "max": 600,
           "unit": "s",
@@ -62,13 +89,22 @@
     },
     "options": {
       "type": "panel",
-      "label": "options",
+      "label": {
+        "en": "Options",
+        "de": "Optionen"
+      },
       "items": {
         "beep": {
           "type": "checkbox",
-          "label": "beep",
+          "label": {
+            "en": "Device beep on commands",
+            "de": "Signalton bei Befehlen"
+          },
           "default": true,
-          "help": "beep_help",
+          "help": {
+            "en": "Disable to keep the indoor unit silent when commands such as power on/off are sent.",
+            "de": "Deaktivieren, damit das Innengerät bei gesendeten Befehlen (z. B. Ein/Aus) stumm bleibt."
+          },
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -77,9 +113,15 @@
         },
         "exposeRawStatus": {
           "type": "checkbox",
-          "label": "exposeRawStatus",
+          "label": {
+            "en": "Expose raw status datapoints",
+            "de": "Rohstatus-Datenpunkte bereitstellen"
+          },
           "default": false,
-          "help": "exposeRawStatus_help",
+          "help": {
+            "en": "Create read-only states below statusRaw.* for every property contained in the status payload.",
+            "de": "Legt schreibgeschützte Zustände unter statusRaw.* für jede Eigenschaft aus dem Statustelegramm an."
+          },
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -88,9 +130,15 @@
         },
         "customPolling": {
           "type": "checkbox",
-          "label": "customPolling",
+          "label": {
+            "en": "Enable custom polling per command",
+            "de": "Individuelle Abfrage je Befehl aktivieren"
+          },
           "default": false,
-          "help": "customPolling_help",
+          "help": {
+            "en": "Allow overriding the default interval for the commands listed below.",
+            "de": "Ermöglicht es, das Standardintervall für die unten aufgeführten Befehle zu überschreiben."
+          },
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -99,9 +147,15 @@
         },
         "modeAsNumber": {
           "type": "checkbox",
-          "label": "modeAsNumber",
+          "label": {
+            "en": "Use numeric values for mode",
+            "de": "Modus als Zahl verwenden"
+          },
           "default": false,
-          "help": "modeAsNumber_help",
+          "help": {
+            "en": "Expose and accept the mode state as numeric codes instead of descriptive strings.",
+            "de": "Stellt den Modus-Zustand als numerische Codes statt beschreibender Texte bereit und akzeptiert ihn so."
+          },
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -110,9 +164,15 @@
         },
         "fanSpeedAsNumber": {
           "type": "checkbox",
-          "label": "fanSpeedAsNumber",
+          "label": {
+            "en": "Use numeric values for fan speed",
+            "de": "Lüftergeschwindigkeit als Zahl verwenden"
+          },
           "default": false,
-          "help": "fanSpeedAsNumber_help",
+          "help": {
+            "en": "Expose and accept the fan speed state as numeric codes instead of descriptive strings.",
+            "de": "Stellt den Lüfterzustand als numerische Codes statt beschreibender Texte bereit und akzeptiert ihn so."
+          },
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -121,9 +181,15 @@
         },
         "swingModeAsNumber": {
           "type": "checkbox",
-          "label": "swingModeAsNumber",
+          "label": {
+            "en": "Use numeric values for swing mode",
+            "de": "Swing-Modus als Zahl verwenden"
+          },
           "default": false,
-          "help": "swingModeAsNumber_help",
+          "help": {
+            "en": "Expose and accept the swing mode state as numeric codes instead of descriptive strings.",
+            "de": "Stellt den Swing-Zustand als numerische Codes statt beschreibender Texte bereit und akzeptiert ihn so."
+          },
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -132,8 +198,14 @@
         },
         "pollingRequests": {
           "type": "table",
-          "label": "pollingRequests",
-          "help": "pollingRequests_help",
+          "label": {
+            "en": "Commands",
+            "de": "Befehle"
+          },
+          "help": {
+            "en": "Select which commands should be executed cyclically and configure their individual intervals.",
+            "de": "Wählen Sie, welche Befehle zyklisch ausgeführt werden, und konfigurieren Sie deren Intervalle."
+          },
           "xs": 12,
           "sm": 12,
           "md": 12,
@@ -143,32 +215,50 @@
             {
               "type": "checkbox",
               "attr": "enabled",
-              "label": "enabled",
+              "label": {
+                "en": "Enabled",
+                "de": "Aktiviert"
+              },
               "default": true
             },
             {
               "type": "select",
               "attr": "id",
-              "label": "dataPoint",
+              "label": {
+                "en": "Command",
+                "de": "Befehl"
+              },
               "options": [
                 {
                   "value": "getStatus",
-                  "label": "getStatus"
+                  "label": {
+                    "en": "Status (0x41)",
+                    "de": "Status (0x41)"
+                  }
                 },
                 {
                   "value": "getCapabilities",
-                  "label": "getCapabilities"
+                  "label": {
+                    "en": "Capabilities (0xB5)",
+                    "de": "Fähigkeiten (0xB5)"
+                  }
                 },
                 {
                   "value": "getPowerUsage",
-                  "label": "getPowerUsage"
+                  "label": {
+                    "en": "Power usage (0x41/energy)",
+                    "de": "Energieverbrauch (0x41/Energie)"
+                  }
                 }
               ]
             },
             {
               "type": "number",
               "attr": "interval",
-              "label": "interval",
+              "label": {
+                "en": "Interval",
+                "de": "Intervall"
+              },
               "default": 60,
               "min": 5,
               "max": 3600,
