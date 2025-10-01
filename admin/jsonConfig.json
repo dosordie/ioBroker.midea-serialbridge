@@ -10,9 +10,7 @@
           "label": "host",
           "default": "",
           "placeholder": "192.168.160.230",
-          "help": {
-            "text": "host_help"
-          },
+          "help": "host_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -23,9 +21,7 @@
           "type": "number",
           "label": "port",
           "default": 23,
-          "help": {
-            "text": "port_help"
-          },
+          "help": "port_help",
           "min": 1,
           "max": 65535,
           "xs": 12,
@@ -38,9 +34,7 @@
           "type": "number",
           "label": "pollingInterval",
           "default": 60,
-          "help": {
-            "text": "pollingInterval_help"
-          },
+          "help": "pollingInterval_help",
           "min": 5,
           "max": 3600,
           "unit": "s",
@@ -54,9 +48,7 @@
           "type": "number",
           "label": "reconnectInterval",
           "default": 10,
-          "help": {
-            "text": "reconnectInterval_help"
-          },
+          "help": "reconnectInterval_help",
           "min": 1,
           "max": 600,
           "unit": "s",
@@ -76,9 +68,7 @@
           "type": "checkbox",
           "label": "beep",
           "default": true,
-          "help": {
-            "text": "beep_help"
-          },
+          "help": "beep_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -89,9 +79,7 @@
           "type": "checkbox",
           "label": "exposeRawStatus",
           "default": false,
-          "help": {
-            "text": "exposeRawStatus_help"
-          },
+          "help": "exposeRawStatus_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -102,9 +90,7 @@
           "type": "checkbox",
           "label": "customPolling",
           "default": false,
-          "help": {
-            "text": "customPolling_help"
-          },
+          "help": "customPolling_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -115,9 +101,7 @@
           "type": "checkbox",
           "label": "modeAsNumber",
           "default": false,
-          "help": {
-            "text": "modeAsNumber_help"
-          },
+          "help": "modeAsNumber_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -128,9 +112,7 @@
           "type": "checkbox",
           "label": "fanSpeedAsNumber",
           "default": false,
-          "help": {
-            "text": "fanSpeedAsNumber_help"
-          },
+          "help": "fanSpeedAsNumber_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -141,9 +123,7 @@
           "type": "checkbox",
           "label": "swingModeAsNumber",
           "default": false,
-          "help": {
-            "text": "swingModeAsNumber_help"
-          },
+          "help": "swingModeAsNumber_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -153,9 +133,7 @@
         "pollingRequests": {
           "type": "table",
           "label": "pollingRequests",
-          "help": {
-            "text": "pollingRequests_help"
-          },
+          "help": "pollingRequests_help",
           "xs": 12,
           "sm": 12,
           "md": 12,
