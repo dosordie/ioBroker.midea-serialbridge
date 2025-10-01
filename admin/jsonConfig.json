@@ -10,10 +10,7 @@
           "label": "host",
           "default": "",
           "placeholder": "192.168.160.230",
-          "help": {
-            "en": "IP address or hostname of the ESP-based Midea serial bridge.",
-            "de": "IP-Adresse oder Hostname der ESP-basierten Midea Serial Bridge."
-          },
+          "help": "host_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -24,10 +21,7 @@
           "type": "number",
           "label": "port",
           "default": 23,
-          "help": {
-            "en": "TCP port of the serial bridge (Telnet, defaults to 23).",
-            "de": "TCP-Port der Bridge (Telnet, Standard 23)."
-          },
+          "help": "port_help",
           "min": 1,
           "max": 65535,
           "xs": 12,
@@ -40,10 +34,7 @@
           "type": "number",
           "label": "pollingInterval",
           "default": 60,
-          "help": {
-            "en": "Base polling interval in seconds that is used when no command-specific value is configured.",
-            "de": "Basisintervall in Sekunden, das genutzt wird, wenn kein individueller Wert für einen Befehl eingestellt ist."
-          },
+          "help": "pollingInterval_help",
           "min": 5,
           "max": 3600,
           "unit": "s",
@@ -57,10 +48,7 @@
           "type": "number",
           "label": "reconnectInterval",
           "default": 10,
-          "help": {
-            "en": "Delay in seconds before the adapter tries to reconnect after the connection was lost.",
-            "de": "Verzögerung in Sekunden, bevor nach einem Verbindungsabbruch erneut verbunden wird."
-          },
+          "help": "reconnectInterval_help",
           "min": 1,
           "max": 600,
           "unit": "s",
@@ -80,10 +68,7 @@
           "type": "checkbox",
           "label": "beep",
           "default": true,
-          "help": {
-            "en": "Disable to keep the indoor unit silent when commands such as power on/off are sent.",
-            "de": "Deaktivieren, damit das Innengerät bei gesendeten Befehlen (z. B. Ein/Aus) stumm bleibt."
-          },
+          "help": "beep_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -94,10 +79,7 @@
           "type": "checkbox",
           "label": "exposeRawStatus",
           "default": false,
-          "help": {
-            "en": "Create read-only states below statusRaw.* for every property contained in the status payload.",
-            "de": "Legt schreibgeschützte Zustände unter statusRaw.* für jede Eigenschaft aus dem Statustelegramm an."
-          },
+          "help": "exposeRawStatus_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -108,10 +90,7 @@
           "type": "checkbox",
           "label": "customPolling",
           "default": false,
-          "help": {
-            "en": "Allow overriding the default interval for the commands listed below.",
-            "de": "Ermöglicht es, das Standardintervall für die unten aufgeführten Befehle zu überschreiben."
-          },
+          "help": "customPolling_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -122,10 +101,7 @@
           "type": "checkbox",
           "label": "modeAsNumber",
           "default": false,
-          "help": {
-            "en": "Expose and accept the mode state as numeric codes instead of descriptive strings.",
-            "de": "Stellt den Modus-Zustand als numerische Codes statt beschreibender Texte bereit und akzeptiert ihn so."
-          },
+          "help": "modeAsNumber_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -136,10 +112,7 @@
           "type": "checkbox",
           "label": "fanSpeedAsNumber",
           "default": false,
-          "help": {
-            "en": "Expose and accept the fan speed state as numeric codes instead of descriptive strings.",
-            "de": "Stellt den Lüfterzustand als numerische Codes statt beschreibender Texte bereit und akzeptiert ihn so."
-          },
+          "help": "fanSpeedAsNumber_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -150,10 +123,7 @@
           "type": "checkbox",
           "label": "swingModeAsNumber",
           "default": false,
-          "help": {
-            "en": "Expose and accept the swing mode state as numeric codes instead of descriptive strings.",
-            "de": "Stellt den Swing-Zustand als numerische Codes statt beschreibender Texte bereit und akzeptiert ihn so."
-          },
+          "help": "swingModeAsNumber_help",
           "xs": 12,
           "sm": 6,
           "md": 4,
@@ -163,10 +133,7 @@
         "pollingRequests": {
           "type": "table",
           "label": "pollingRequests",
-          "help": {
-            "en": "Select which commands should be executed cyclically and configure their individual intervals.",
-            "de": "Wählen Sie, welche Befehle zyklisch ausgeführt werden, und konfigurieren Sie deren Intervalle."
-          },
+          "help": "pollingRequests_help",
           "xs": 12,
           "sm": 12,
           "md": 12,
