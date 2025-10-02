@@ -53,6 +53,12 @@ For advanced use cases you can send arbitrary command payloads to the serial bri
 {"beep": false, "temperatureSetpoint": 30}
 ```
 
+When sending boolean properties you can pass the string value `"toggle"` to invert the cached state of supported flags (`power`, `ecoMode`, `frostProtectionMode`, `turboMode`, `sleepMode`). This allows commands such as:
+
+```
+{"turboMode": "toggle"}
+```
+
 Successful commands are acknowledged automatically and the resulting status update is reflected in the other datapoints.
 
 ## Known limitations
