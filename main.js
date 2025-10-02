@@ -1,6 +1,7 @@
 'use strict';
 
 const utils = require('@iobroker/adapter-core');
+const { isDeepStrictEqual } = require('node:util');
 const { MideaSerialBridge } = require('./lib/midea-serial-bridge');
 const { DATA_POINTS } = require('./lib/datapoints');
 const {
@@ -18,6 +19,65 @@ const {
   normalizeString,
 } = require('./lib/value-mappings');
 const { EXIT_CODES } = utils;
+
+function normalizeBooleanValue(value) {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+    if (normalized === 'true' || normalized === '1') {
+      return true;
+    }
+    if (normalized === 'false' || normalized === '0') {
+      return false;
+    }
+  }
+
+  return value === true || value === 1;
+}
+
+function cloneRecursively(value, seen) {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
+  if (seen.has(value)) {
+    return seen.get(value);
+  }
+
+  if (Array.isArray(value)) {
+    const clonedArray = [];
+    seen.set(value, clonedArray);
+    for (const item of value) {
+      clonedArray.push(cloneRecursively(item, seen));
+    }
+    return clonedArray;
+  }
+
+  const clonedObject = {};
+  seen.set(value, clonedObject);
+  for (const key of Object.keys(value)) {
+    clonedObject[key] = cloneRecursively(value[key], seen);
+  }
+  return clonedObject;
+}
+
+function deepClone(value) {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
+  if (typeof globalThis.structuredClone === 'function') {
+    try {
+      return globalThis.structuredClone(value);
+    } catch (_error) {
+      // Fallback to manual cloning below if structuredClone cannot handle the value
+    }
+  }
+
+  return cloneRecursively(value, new WeakMap());
+}
 
 function cloneDatapointDefinition(datapoint) {
   const clone = { ...datapoint };
@@ -537,7 +597,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       this.config = {};
     }
 
-    const originalConfig = this._deepClone(this.config);
+    const originalConfig = deepClone(this.config);
     let changed = false;
 
     const moveLegacyValue = (legacyKey, targetKey, predicate = () => true) => {
@@ -721,20 +781,16 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
     if (typeof this.config.exposeRawStatus !== 'boolean') {
       const rawValue = this.config.exposeRawStatus;
-      const normalizedExposeRawStatus =
-        rawValue === true || rawValue === 'true' || rawValue === 1 || rawValue === '1';
+      const normalizedExposeRawStatus = normalizeBooleanValue(rawValue);
       if (normalizedExposeRawStatus !== rawValue || rawValue === undefined) {
         this.config.exposeRawStatus = normalizedExposeRawStatus;
         changed = true;
       }
     }
 
-    const normalizeBoolean = (value) =>
-      value === true || value === 'true' || value === 1 || value === '1';
-
     for (const key of ['modeAsNumber', 'fanSpeedAsNumber', 'swingModeAsNumber']) {
       if (typeof this.config[key] !== 'boolean') {
-        const normalized = normalizeBoolean(this.config[key]);
+        const normalized = normalizeBooleanValue(this.config[key]);
         if (normalized !== this.config[key]) {
           this.config[key] = normalized;
           changed = true;
@@ -742,8 +798,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       }
     }
 
-    const normalizedConfig = this._deepClone(this.config);
-    const configChanged = changed || !this._deepEqual(originalConfig, normalizedConfig);
+    const normalizedConfig = deepClone(this.config);
+    const configChanged = changed || !isDeepStrictEqual(originalConfig, normalizedConfig);
 
     return {
       changed: configChanged,
@@ -820,91 +876,15 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         return;
       }
 
-      if (this._deepEqual(adapterObject.native, normalizedConfig)) {
+      if (isDeepStrictEqual(adapterObject.native, normalizedConfig)) {
         return;
       }
 
-      adapterObject.native = this._deepClone(normalizedConfig);
+      adapterObject.native = deepClone(normalizedConfig);
       await this.setForeignObjectAsync(objectId, adapterObject);
     } catch (error) {
       this.log.warn(`Failed to persist normalized config: ${error.message}`);
     }
-  }
-
-  _deepClone(value, seen = new WeakMap()) {
-    if (value === null || typeof value !== 'object') {
-      return value;
-    }
-
-    if (seen.has(value)) {
-      return seen.get(value);
-    }
-
-    if (Array.isArray(value)) {
-      const clonedArray = [];
-      seen.set(value, clonedArray);
-      for (const item of value) {
-        clonedArray.push(this._deepClone(item, seen));
-      }
-      return clonedArray;
-    }
-
-    const clonedObject = {};
-    seen.set(value, clonedObject);
-    for (const key of Object.keys(value)) {
-      clonedObject[key] = this._deepClone(value[key], seen);
-    }
-    return clonedObject;
-  }
-
-  _deepEqual(a, b, visited = new WeakMap()) {
-    if (a === b) {
-      return true;
-    }
-
-    if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') {
-      return false;
-    }
-
-    if (visited.has(a)) {
-      return visited.get(a) === b;
-    }
-    visited.set(a, b);
-
-    if (Array.isArray(a)) {
-      if (!Array.isArray(b) || a.length !== b.length) {
-        return false;
-      }
-
-      for (let i = 0; i < a.length; i++) {
-        if (!this._deepEqual(a[i], b[i], visited)) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    if (Array.isArray(b)) {
-      return false;
-    }
-
-    const aKeys = Object.keys(a);
-    const bKeys = Object.keys(b);
-
-    if (aKeys.length !== bKeys.length) {
-      return false;
-    }
-
-    for (const key of aKeys) {
-      if (!Object.prototype.hasOwnProperty.call(b, key)) {
-        return false;
-      }
-      if (!this._deepEqual(a[key], b[key], visited)) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   async _pollStatus() {
@@ -1171,7 +1151,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
 
     if (datapoint.type === 'boolean') {
-      return value === 'true' || value === true || value === 1;
+      return normalizeBooleanValue(value);
     }
 
     if (datapoint.type === 'number') {
@@ -1395,7 +1375,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
   _normalizeReadValue(datapoint, value) {
     if (datapoint.type === 'boolean') {
-      return !!value;
+      return normalizeBooleanValue(value);
     }
 
     if (datapoint.type === 'number') {
