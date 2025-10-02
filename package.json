@@ -25,7 +25,8 @@
     "@iobroker/adapter-core": "^3.2.2",
     "@iobroker/json-config": "^1.0.0",
     "crypto-js": "^4.2.0",
-    "node-mideahvac": "^0.3.0"
+    "strftime": "^0.10.1",
+    "winston": "^3.6.0"
   },
   "devDependencies": {
     "@iobroker/testing": "^4.1.3",

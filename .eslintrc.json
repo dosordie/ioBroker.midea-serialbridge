@@ -13,7 +13,8 @@
   },
   "ignorePatterns": [
     "node_modules/",
-    "admin/"
+    "admin/",
+    "lib/node-mideahvac/"
   ],
   "rules": {
     "no-unused-vars": [
