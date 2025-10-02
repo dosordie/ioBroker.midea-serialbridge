@@ -6,6 +6,8 @@
 
 This adapter allows you to control Midea HVAC units locally using the well known serial bridge interface. It is based on the logic of the [node-mideahvac](https://github.com/reneklootwijk/node-mideahvac) project and exposes all relevant datapoints to ioBroker. Cloud functionality has intentionally been left out so that the devices can be operated without an external connection.
 
+For easier maintenance and to allow local modifications we ship a vendored copy of `node-mideahvac` with the adapter. The sources (including the MIT license) are located in [`lib/node-mideahvac`](lib/node-mideahvac).
+
 ## Features
 
 * Connect to a TCP serial bridge (default port 23)
