@@ -433,14 +433,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         parsedValue = JSON.parse(normalizedJson);
       } catch (error) {
         this.log.error(`Failed to parse JSON command: ${this._formatError(error)}`);
-        this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
+        this.setState(stateId, { val: rawValue, ack: true, q: 0x21 });
         return;
       }
     }
 
     if (!parsedValue || typeof parsedValue !== 'object' || Array.isArray(parsedValue)) {
       this.log.error('JSON command must be an object with key/value pairs');
-      this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
+      this.setState(stateId, { val: rawValue, ack: true, q: 0x21 });
       return;
     }
 
@@ -456,7 +456,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       });
     } catch (error) {
       this.log.error(`Failed to execute JSON command: ${this._formatError(error)}`);
-      this.setState(stateId, { val: rawValue, ack: false, q: 0x21 });
+      this.setState(stateId, { val: rawValue, ack: true, q: 0x21 });
     }
   }
 
