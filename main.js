@@ -1182,7 +1182,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       if (Number.isNaN(parsed)) {
         throw new Error(`Invalid numeric value ${value}`);
       }
-      return parsed;
+      let normalized = parsed;
+      if (typeof datapoint.min === 'number' && normalized < datapoint.min) {
+        normalized = datapoint.min;
+      }
+      if (typeof datapoint.max === 'number' && normalized > datapoint.max) {
+        normalized = datapoint.max;
+      }
+      return normalized;
     }
 
     if (datapoint.type === 'string') {
