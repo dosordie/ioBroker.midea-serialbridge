@@ -89,6 +89,8 @@
     "port": 23,
     "pollingInterval": 60,
     "reconnectInterval": 10,
+    "restartOnError": false,
+    "restartInterval": 300,
     "beep": true,
     "exposeRawStatus": false,
     "modeAsNumber": false,

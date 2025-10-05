@@ -84,6 +84,43 @@
           "md": 4,
           "lg": 4,
           "xl": 3
+        },
+        "restartOnError": {
+          "type": "checkbox",
+          "label": {
+            "en": "Restart adapter on connection errors",
+            "de": "Adapter bei Verbindungsfehler neu starten"
+          },
+          "default": false,
+          "help": {
+            "en": "Automatically restart the adapter when the bridge cannot be reached.",
+            "de": "Startet den Adapter automatisch neu, wenn die Bridge nicht erreichbar ist."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 4,
+          "lg": 4,
+          "xl": 3
+        },
+        "restartInterval": {
+          "type": "number",
+          "label": {
+            "en": "Restart interval",
+            "de": "Neustartintervall"
+          },
+          "default": 300,
+          "help": {
+            "en": "Time in seconds before the adapter restarts itself after a connection error.",
+            "de": "Zeit in Sekunden, bevor der Adapter sich nach einem Verbindungsfehler neu startet."
+          },
+          "min": 30,
+          "max": 86400,
+          "unit": "s",
+          "xs": 12,
+          "sm": 6,
+          "md": 4,
+          "lg": 4,
+          "xl": 3
         }
       }
     },
