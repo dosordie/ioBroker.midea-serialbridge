@@ -1,5 +1,9 @@
 # Changelog
 
+## __WORK IN PROGRESS__
+
+* add optional automatic adapter restart on connection errors with configurable delay
+
 ## 0.0.2 (2025-09-30)
 
 * align admin JSON config layout sizes with the adapter checker requirements

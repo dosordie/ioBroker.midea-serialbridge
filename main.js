@@ -116,6 +116,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this.datapoints = DATA_POINTS.map((dp) => cloneDatapointDefinition(dp));
     this.datapointById = new Map(this.datapoints.map((dp) => [dp.id, dp]));
     this._terminating = false;
+    this._restartTimer = null;
     this._knownCapabilityStates = new Set();
     this._knownRawStatusStates = new Set();
     this.valueRepresentation = { mode: false, fanSpeed: false, swingMode: false };
@@ -170,6 +171,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
       this.bridge.on('connected', () => {
         this.log.info('Serial bridge connection established');
+        this._clearRestartTimer();
         this.setStateAsync('info.connection', true, true);
         this._startPolling();
       });
@@ -178,6 +180,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         this.log.warn('Serial bridge disconnected');
         this.setStateAsync('info.connection', false, true);
         this._clearPolling();
+        this._scheduleRestart('Serial bridge disconnected');
       });
 
       this.bridge.on('statusData', (values, rawStatus) => {
@@ -202,6 +205,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     } catch (error) {
       const message = this._formatError(error);
       this.log.error(`Adapter initialization failed: ${message}`);
+      if (this._scheduleRestart('Adapter initialization failed')) {
+        return;
+      }
       this._terminateAdapter('Adapter initialization failed', message);
     }
   }
@@ -210,6 +216,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this._terminating = true;
     this._unregisterProcessHandlers();
     try {
+      this._clearRestartTimer();
       this._clearPolling();
       if (this.bridge) {
         this.bridge.disconnect();
@@ -282,6 +289,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       return;
     }
     this._terminating = true;
+    this._clearRestartTimer();
     try {
       const exitReason = detail ? `${reason}: ${detail}` : reason;
       this.terminate(exitReason, EXIT_CODES.ADAPTER_REQUESTED_TERMINATION);
@@ -551,6 +559,57 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this.pollTimers.clear();
   }
 
+  _shouldRestartOnError() {
+    return !!(this.config && this.config.restartOnError);
+  }
+
+  _getRestartIntervalSeconds() {
+    const interval = Number(this.config && this.config.restartInterval);
+    if (Number.isFinite(interval) && interval > 0) {
+      return interval;
+    }
+    return 300;
+  }
+
+  _clearRestartTimer() {
+    if (this._restartTimer) {
+      this.clearTimeout(this._restartTimer);
+      this._restartTimer = null;
+    }
+  }
+
+  _scheduleRestart(reason) {
+    if (!this._shouldRestartOnError()) {
+      return false;
+    }
+
+    const intervalSeconds = this._getRestartIntervalSeconds();
+    if (!intervalSeconds || intervalSeconds <= 0) {
+      return false;
+    }
+
+    if (this._restartTimer) {
+      this.log.debug('Adapter restart already scheduled; keeping existing timer active.');
+      return true;
+    }
+
+    const messageSuffix = reason ? ` (${reason})` : '';
+    this.log.warn(
+      `Restarting adapter in ${intervalSeconds} seconds due to connection problems${messageSuffix}.`
+    );
+
+    this._restartTimer = this.setTimeout(() => {
+      this._restartTimer = null;
+      if (this._terminating) {
+        return;
+      }
+      this.log.warn('Restarting adapter now due to persistent connection problems.');
+      this._terminateAdapter('Restart due to connection issues');
+    }, intervalSeconds * 1000);
+
+    return true;
+  }
+
   _executePolling(methodId) {
     switch (methodId) {
       case 'getStatus':
@@ -743,6 +802,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
+    const normalizedRestartInterval = normalizeInteger(this.config.restartInterval, 300, 30, 86400);
+    if (normalizedRestartInterval !== this.config.restartInterval) {
+      this.config.restartInterval = normalizedRestartInterval;
+      changed = true;
+    }
+
     const pollingIsObject = this.config.polling && typeof this.config.polling === 'object';
     const existingRequests =
       pollingIsObject && Array.isArray(this.config.polling.requests)
@@ -788,7 +853,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       }
     }
 
-    for (const key of ['modeAsNumber', 'fanSpeedAsNumber', 'swingModeAsNumber']) {
+    for (const key of ['modeAsNumber', 'fanSpeedAsNumber', 'swingModeAsNumber', 'restartOnError']) {
       if (typeof this.config[key] !== 'boolean') {
         const normalized = normalizeBooleanValue(this.config[key]);
         if (normalized !== this.config[key]) {
