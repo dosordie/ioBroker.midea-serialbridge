@@ -33,23 +33,35 @@ For protocol analysis you can enable **Enable unknown group diagnosis polling** 
 
 Configure **Unknown group IDs** as comma-separated hexadecimal group bytes from `0x40` to `0x4F`, for example `40,41,42,43,46,47,48,49`. The adapter ignores invalid values and duplicates, enforces a minimum interval of 10 seconds, limits the list to 8 groups, and polls the groups sequentially with a small pause so the device is not flooded.
 
-Responses are written only below `statusRaw.unknownGroups.groupXX.*` for analysis and never create normal sensor datapoints. Each response includes `rawFrameHex`, `payloadHex`, `responseId`, `groupByte`, `rawBytes` and `analogCandidates`. Compare `payloadHex`, `rawBytes` and `analogCandidates` while changing real-world conditions (temperatures, compressor load, fan speed, EEV position, defrost/protection state) to identify bytes that move consistently.
+Responses are written only below `statusRaw.unknownGroups.groupXX.*` for analysis and never create normal sensor datapoints. Each response includes `rawFrameHex`, `payloadHex`, `responseId`, `groupByte`, `rawBytes` and `analogCandidates`. Group byte `0x41` is now supported as `getGroup41Data`; if it is still configured here, the adapter skips it with a debug note instead of creating duplicate unknown-group states. Compare `payloadHex`, `rawBytes` and `analogCandidates` while changing real-world conditions (temperatures, compressor load, fan speed, EEV position, defrost/protection state) to identify bytes that move consistently.
+
+### C1 Group 41 diagnostic candidate values
+
+The regular polling configuration now includes `getGroup41Data`, a read-only 20-byte C1 query (`41 21 01 41 00 ... 00`) for experimentally decoded Group 41 diagnostic data. The decoded values are exposed as normal `sensors.*` datapoints, but their state names and descriptions deliberately contain `Kandidat` because the exact Midea protocol meaning can differ between devices and is not finally verified.
+
+Group 41 currently decodes the direct byte 04 value as `sensors.compressorFrequencyCandidate` and applies the Midea temperature formula `(byte - 50) / 2` to bytes 08, 10, 11, 12 and 13 for the temperature candidates. When raw status output is enabled, compact Group 41 raw values are available as `statusRaw.group41_rawFrameHex` and `statusRaw.group41_payloadHex`; detailed `rawByteXX`, bit and analog candidate states are intentionally not generated for this supported group.
 
 The following datapoints are available out of the box:
 
-| State ID             | Description                                         | Read | Write |
-| -------------------- | --------------------------------------------------- | ---- | ----- |
-| `power`              | Turn the unit on or off                             | ✓    | ✓     |
-| `mode`               | Operation mode (auto, cool, heat, dry, fan)         | ✓    | ✓     |
-| `targetTemperature`  | Desired room temperature                            | ✓    | ✓     |
-| `indoorTemperature`  | Current indoor temperature                          | ✓    | ✗     |
-| `outdoorTemperature` | Current outdoor temperature                         | ✓    | ✗     |
-| `totalEnergy`        | Internal total energy counter from C1 group 4 (kWh) | ✓    | ✗     |
-| `fanSpeed`           | Fan speed (auto, low, medium, high)                 | ✓    | ✓     |
-| `swingMode`          | Swing mode (off, vertical, horizontal, both)        | ✓    | ✓     |
-| `ecoMode`            | Eco mode                                            | ✓    | ✓     |
-| `turboMode`          | Turbo / powerful mode                               | ✓    | ✓     |
-| `sleepMode`          | Sleep mode                                          | ✓    | ✓     |
+| State ID                                | Description                                                                                 | Read | Write |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- | ---- | ----- |
+| `power`                                 | Turn the unit on or off                                                                     | ✓    | ✓     |
+| `mode`                                  | Operation mode (auto, cool, heat, dry, fan)                                                 | ✓    | ✓     |
+| `targetTemperature`                     | Desired room temperature                                                                    | ✓    | ✓     |
+| `indoorTemperature`                     | Current indoor temperature                                                                  | ✓    | ✗     |
+| `outdoorTemperature`                    | Current outdoor temperature                                                                 | ✓    | ✗     |
+| `totalEnergy`                           | Internal total energy counter from C1 group 4 (kWh)                                         | ✓    | ✗     |
+| `compressorFrequencyCandidate`          | Candidate compressor frequency / inverter load stage from C1 Group 41 byte 04 (Hz)          | ✓    | ✗     |
+| `hotGasOrCondenserTemperatureCandidate` | Candidate hot-gas, condenser or outdoor-unit pipe temperature from C1 Group 41 byte 08 (°C) | ✓    | ✗     |
+| `evaporatorTemperature1Candidate`       | Candidate evaporator or pipe temperature 1 from C1 Group 41 byte 10 (°C)                    | ✓    | ✗     |
+| `evaporatorTemperature2Candidate`       | Candidate evaporator or pipe temperature 2 from C1 Group 41 byte 11 (°C)                    | ✓    | ✗     |
+| `outdoorCoilTemperatureCandidate`       | Candidate outdoor-unit, condenser or pipe temperature from C1 Group 41 byte 12 (°C)         | ✓    | ✗     |
+| `outdoorAmbientTemperatureCandidate`    | Candidate outdoor temperature / outdoor sensor from C1 Group 41 byte 13 (°C)                | ✓    | ✗     |
+| `fanSpeed`                              | Fan speed (auto, low, medium, high)                                                         | ✓    | ✓     |
+| `swingMode`                             | Swing mode (off, vertical, horizontal, both)                                                | ✓    | ✓     |
+| `ecoMode`                               | Eco mode                                                                                    | ✓    | ✓     |
+| `turboMode`                             | Turbo / powerful mode                                                                       | ✓    | ✓     |
+| `sleepMode`                             | Sleep mode                                                                                  | ✓    | ✓     |
 
 Whenever you change a writable state in ioBroker the adapter forwards the command to the bridge immediately.
 
@@ -75,6 +87,10 @@ Successful commands are acknowledged automatically and the resulting status upda
 - The adapter currently supports a single indoor unit per instance.
 
 ## Changelog
+
+### 0.0.5
+
+- Add regular `getGroup41Data` polling for experimental C1 Group 41 diagnostic candidate sensor values.
 
 ### 0.0.2
 

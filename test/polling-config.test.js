@@ -8,6 +8,7 @@ const DEFAULT_REQUESTS = [
   { id: 'getCapabilities', enabled: false, interval: 3600 },
   { id: 'getPowerUsage', enabled: false, interval: 300 },
   { id: 'getGroup5Data', enabled: false, interval: 300 },
+  { id: 'getGroup41Data', enabled: false, interval: 300 },
 ];
 
 assert.deepStrictEqual(normalizePollingRequests({}), DEFAULT_REQUESTS);
@@ -26,6 +27,7 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: false, interval: 3600 },
     { id: 'getPowerUsage', enabled: true, interval: 45 },
     { id: 'getGroup5Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 300 },
   ]
 );
 
@@ -41,6 +43,7 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: true, interval: 600 },
     { id: 'getPowerUsage', enabled: false, interval: 300 },
     { id: 'getGroup5Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 300 },
   ]
 );
 
@@ -66,6 +69,7 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: false, interval: 3600 },
     { id: 'getPowerUsage', enabled: false, interval: 300 },
     { id: 'getGroup5Data', enabled: true, interval: 60 },
+    { id: 'getGroup41Data', enabled: false, interval: 300 },
   ]
 );
 
@@ -73,7 +77,7 @@ assert.deepStrictEqual(
   normalizePollingRequests({
     pollingRequests: [{ id: 'getStatus', enabled: true, interval: 60 }],
   }).map((entry) => entry.id),
-  ['getStatus', 'getCapabilities', 'getPowerUsage', 'getGroup5Data']
+  ['getStatus', 'getCapabilities', 'getPowerUsage', 'getGroup5Data', 'getGroup41Data']
 );
 
 assert.deepStrictEqual(
@@ -88,6 +92,13 @@ assert.deepStrictEqual(
     pollingRequests: [{ id: 'getGroup5Data', enabled: false, interval: 30 }],
   }).find((entry) => entry.id === 'getGroup5Data'),
   { id: 'getGroup5Data', enabled: false, interval: 30 }
+);
+
+assert.deepStrictEqual(
+  normalizePollingRequests({
+    pollingRequests: [{ id: 'getGroup41Data', enabled: true, interval: 60 }],
+  }).find((entry) => entry.id === 'getGroup41Data'),
+  { id: 'getGroup41Data', enabled: true, interval: 60 }
 );
 
 assert.deepStrictEqual(

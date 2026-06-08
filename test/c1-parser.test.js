@@ -52,6 +52,29 @@ assert.strictEqual(parser(shortGroup5).humidity, 44);
 assert.strictEqual(parser(shortGroup5).indoorHumidity, 44);
 assert.strictEqual(parser(shortGroup5).group, 5);
 
+const group41Off = parser(Buffer.from('c12101410000000094004440676d000000000000', 'hex'));
+assert.strictEqual(group41Off.compressorFrequencyCandidate, 0);
+assert.strictEqual(group41Off.hotGasOrCondenserTemperatureCandidate, 49.0);
+assert.strictEqual(group41Off.evaporatorTemperature1Candidate, 9.0);
+assert.strictEqual(group41Off.evaporatorTemperature2Candidate, 7.0);
+assert.strictEqual(group41Off.outdoorCoilTemperatureCandidate, 26.5);
+assert.strictEqual(group41Off.outdoorAmbientTemperatureCandidate, 29.5);
+assert.strictEqual(group41Off.group41_payloadHex, 'c12101410000000094004440676d000000000000');
+assert.strictEqual(group41Off.rawBytes, undefined);
+assert.strictEqual(group41Off.analogCandidates, undefined);
+
+const group41Running = parser(Buffer.from('c1210141002100009940443f6f6c000000000000', 'hex'));
+assert.strictEqual(group41Running.compressorFrequencyCandidate, 33);
+assert.strictEqual(group41Running.hotGasOrCondenserTemperatureCandidate, 50.5);
+assert.strictEqual(group41Running.evaporatorTemperature1Candidate, 9.0);
+assert.strictEqual(group41Running.evaporatorTemperature2Candidate, 6.5);
+assert.strictEqual(group41Running.outdoorCoilTemperatureCandidate, 30.5);
+assert.strictEqual(group41Running.outdoorAmbientTemperatureCandidate, 29.0);
+
+const shortGroup41 = parser(Buffer.from([0xc1, 0x21, 0x01, 0x41, 0x21]));
+assert.strictEqual(shortGroup41.compressorFrequencyCandidate, undefined);
+assert.strictEqual(shortGroup41.group, 1);
+
 const debug = parser(group5, { exposeRawBytes: true, frame: Buffer.from([0xaa, 0xbb]) });
 assert.strictEqual(debug.rawFrameHex, 'aabb');
 assert.strictEqual(debug.payloadHex, group5.toString('hex'));

@@ -193,6 +193,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         });
       });
 
+      this.bridge.on('group41Data', (group41Data) => {
+        this._applyGroup41Data(group41Data).catch((error) => {
+          this.log.debug(`Failed to process group 41 update: ${this._formatError(error)}`);
+        });
+      });
+
       this.bridge.on('unknownGroupData', (groupData) => {
         this._applyUnknownGroupData(groupData).catch((error) => {
           this.log.debug(`Failed to process unknown group update: ${this._formatError(error)}`);
@@ -408,6 +414,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
       if (datapoint.unit) {
         common.unit = datapoint.unit;
+      }
+      if (datapoint.desc) {
+        common.desc = datapoint.desc;
       }
       if (datapoint.states) {
         common.states = datapoint.states;
@@ -703,6 +712,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         break;
       case 'getGroup5Data':
         this._pollGroup5Data();
+        break;
+      case 'getGroup41Data':
+        this._pollGroup41Data();
         break;
       default:
         this.log.debug(`No polling handler registered for ${methodId}`);
@@ -1104,6 +1116,20 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
   }
 
+  async _pollGroup41Data() {
+    if (!this.bridge || !this.bridge.connected) {
+      return;
+    }
+
+    this.log.debug('Polling group 41 diagnostic data now');
+
+    try {
+      await this.bridge.getGroup41Data();
+    } catch (error) {
+      this.log.warn(`Polling group 41 diagnostic data failed: ${error.message}`);
+    }
+  }
+
   async _pollUnknownGroupsSequentially(groups) {
     if (!this.bridge || !this.bridge.connected || !Array.isArray(groups) || groups.length === 0) {
       return;
@@ -1127,6 +1153,13 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         }
 
         const formattedGroup = `0x${formatUnknownGroupId(groupByte)}`;
+        if (groupByte === 0x41) {
+          this.log.debug(
+            'Group 41 is supported as getGroup41Data; skipping unknown group diagnosis polling for 0x41'
+          );
+          continue;
+        }
+
         this.log.debug(`Polling unknown group ${formattedGroup} now`);
 
         try {
@@ -1331,6 +1364,48 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       } catch (error) {
         this.log.debug(
           `Failed to update group 5 state ${datapointId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _applyGroup41Data(group41Data) {
+    if (!group41Data || typeof group41Data !== 'object') {
+      return;
+    }
+
+    if (this.config && this.config.exposeRawStatus) {
+      const rawEntries = Object.entries({
+        group41_rawFrameHex: group41Data.group41_rawFrameHex || group41Data.rawFrameHex || '',
+        group41_payloadHex: group41Data.group41_payloadHex || group41Data.payloadHex || '',
+      });
+      await this._applyRawStatus(rawEntries);
+    }
+
+    const mapped = {
+      compressorFrequencyCandidate: group41Data.compressorFrequencyCandidate,
+      hotGasOrCondenserTemperatureCandidate: group41Data.hotGasOrCondenserTemperatureCandidate,
+      evaporatorTemperature1Candidate: group41Data.evaporatorTemperature1Candidate,
+      evaporatorTemperature2Candidate: group41Data.evaporatorTemperature2Candidate,
+      outdoorCoilTemperatureCandidate: group41Data.outdoorCoilTemperatureCandidate,
+      outdoorAmbientTemperatureCandidate: group41Data.outdoorAmbientTemperatureCandidate,
+    };
+
+    for (const [datapointId, value] of Object.entries(mapped)) {
+      if (!this.datapointById.has(datapointId) || value === undefined) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update group 41 state ${datapointId}: ${this._formatError(error)}`
         );
       }
     }
