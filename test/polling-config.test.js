@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const { normalizePollingRequests } = require('../lib/polling-config');
+const { normalizePollingRequests, parseUnknownGroupIds } = require('../lib/polling-config');
 
 const DEFAULT_REQUESTS = [
   { id: 'getStatus', enabled: true, interval: 60 },
@@ -96,5 +96,26 @@ assert.deepStrictEqual(
   }).find((entry) => entry.id === 'getPowerUsage'),
   { id: 'getPowerUsage', enabled: true, interval: 300 }
 );
+
+assert.deepStrictEqual(parseUnknownGroupIds('40,41,46').groups, [0x40, 0x41, 0x46]);
+assert.deepStrictEqual(parseUnknownGroupIds('0x40,0x41').groups, [0x40, 0x41]);
+assert.deepStrictEqual(parseUnknownGroupIds('39,40,50,zz,0x4f'), {
+  groups: [0x40, 0x4f],
+  invalid: ['39', '50', 'zz'],
+  duplicates: [],
+  truncated: false,
+});
+assert.deepStrictEqual(parseUnknownGroupIds('40,0x40,41,41'), {
+  groups: [0x40, 0x41],
+  invalid: [],
+  duplicates: [0x40, 0x41],
+  truncated: false,
+});
+assert.deepStrictEqual(parseUnknownGroupIds('40,41,42,43,44,45,46,47,48,49'), {
+  groups: [0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47],
+  invalid: [],
+  duplicates: [],
+  truncated: true,
+});
 
 console.log('polling config normalization tests passed');

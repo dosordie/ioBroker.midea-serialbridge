@@ -6,9 +6,13 @@ const { MideaSerialBridge } = require('./lib/midea-serial-bridge');
 const { DATA_POINTS } = require('./lib/datapoints');
 const {
   POLLING_METHOD_MAP,
+  UNKNOWN_GROUP_MAX_COUNT,
   describePollingEntries,
+  formatUnknownGroupId,
   normalizeBooleanValue,
   normalizePollingRequests,
+  normalizeUnknownGroupPollingInterval,
+  parseUnknownGroupIds,
 } = require('./lib/polling-config');
 const {
   MODE_ALIASES,
@@ -91,6 +95,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this._restartTimer = null;
     this._knownCapabilityStates = new Set();
     this._knownRawStatusStates = new Set();
+    this._knownUnknownGroupRawStates = new Set();
+    this._unknownGroupPollingInProgress = false;
     this.valueRepresentation = { mode: false, fanSpeed: false, swingMode: false };
 
     this._unhandledRejectionHandler = (reason) => {
@@ -184,6 +190,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       this.bridge.on('group5Data', (group5Data) => {
         this._applyGroup5Data(group5Data).catch((error) => {
           this.log.debug(`Failed to process group 5 update: ${this._formatError(error)}`);
+        });
+      });
+
+      this.bridge.on('unknownGroupData', (groupData) => {
+        this._applyUnknownGroupData(groupData).catch((error) => {
+          this.log.debug(`Failed to process unknown group update: ${this._formatError(error)}`);
         });
       });
 
@@ -345,6 +357,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       type: 'channel',
       common: {
         name: 'Raw status values',
+      },
+      native: {},
+    });
+
+    await this.setObjectNotExistsAsync('statusRaw.unknownGroups', {
+      type: 'channel',
+      common: {
+        name: 'Unknown group diagnosis values',
       },
       native: {},
     });
@@ -543,9 +563,72 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       handler();
     }
 
-    if (activeConfig.length === 0) {
+    this._startUnknownGroupPolling();
+
+    if (activeConfig.length === 0 && !this._isUnknownGroupPollingEnabled()) {
       this.log.debug('No polling requests enabled; skipping scheduled commands');
     }
+  }
+
+  _isUnknownGroupPollingEnabled() {
+    return !!(this.config && this.config.enableUnknownGroupPolling);
+  }
+
+  _getUnknownGroupPollingGroups() {
+    const result = parseUnknownGroupIds(this.config && this.config.unknownGroupIds);
+    this._logUnknownGroupParsingIssues(result);
+    return result.groups;
+  }
+
+  _logUnknownGroupParsingIssues(result) {
+    if (!result) {
+      return;
+    }
+
+    if (result.invalid && result.invalid.length > 0) {
+      this.log.warn(`Ignoring invalid unknown group id(s): ${result.invalid.join(', ')}`);
+    }
+
+    if (result.duplicates && result.duplicates.length > 0) {
+      this.log.debug(
+        `Ignoring duplicate unknown group id(s): ${result.duplicates
+          .map((group) => `0x${formatUnknownGroupId(group)}`)
+          .join(', ')}`
+      );
+    }
+
+    if (result.truncated) {
+      this.log.warn(`Ignoring unknown group ids beyond the limit of ${UNKNOWN_GROUP_MAX_COUNT}`);
+    }
+  }
+
+  _startUnknownGroupPolling() {
+    if (!this._isUnknownGroupPollingEnabled()) {
+      this.log.debug('Unknown group diagnosis polling disabled');
+      return;
+    }
+
+    const groups = this._getUnknownGroupPollingGroups();
+    if (groups.length === 0) {
+      this.log.debug('Unknown group diagnosis polling enabled without valid groups');
+      return;
+    }
+
+    const intervalSeconds = normalizeUnknownGroupPollingInterval(
+      this.config && this.config.unknownGroupPollingInterval,
+      60
+    );
+    const intervalMs = intervalSeconds * 1000;
+    const formattedGroups = groups.map((group) => `0x${formatUnknownGroupId(group)}`).join(', ');
+
+    this.log.debug(
+      `Scheduling unknown group diagnosis polling for ${formattedGroups} every ${intervalSeconds}s`
+    );
+
+    const handler = () => this._pollUnknownGroupsSequentially(groups);
+    const timer = setInterval(handler, intervalMs);
+    this.pollTimers.set('unknownGroups', timer);
+    handler();
   }
 
   _clearPolling() {
@@ -553,6 +636,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       clearInterval(timer);
     }
     this.pollTimers.clear();
+    this._unknownGroupPollingInProgress = false;
   }
 
   _shouldRestartOnError() {
@@ -801,6 +885,25 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
+    const normalizedUnknownGroupPollingInterval = normalizeUnknownGroupPollingInterval(
+      this.config.unknownGroupPollingInterval,
+      60
+    );
+    if (normalizedUnknownGroupPollingInterval !== this.config.unknownGroupPollingInterval) {
+      this.config.unknownGroupPollingInterval = normalizedUnknownGroupPollingInterval;
+      changed = true;
+    }
+
+    const parsedUnknownGroups = parseUnknownGroupIds(this.config.unknownGroupIds);
+    this._logUnknownGroupParsingIssues(parsedUnknownGroups);
+    const normalizedUnknownGroupIds = parsedUnknownGroups.groups
+      .map((group) => formatUnknownGroupId(group))
+      .join(',');
+    if ((this.config.unknownGroupIds || '') !== normalizedUnknownGroupIds) {
+      this.config.unknownGroupIds = normalizedUnknownGroupIds;
+      changed = true;
+    }
+
     const normalizedPollingRequests = normalizePollingRequests(this.config);
     if (!isDeepStrictEqual(this.config.pollingRequests, normalizedPollingRequests)) {
       this.config.pollingRequests = normalizedPollingRequests;
@@ -844,7 +947,13 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       }
     }
 
-    for (const key of ['modeAsNumber', 'fanSpeedAsNumber', 'swingModeAsNumber', 'restartOnError']) {
+    for (const key of [
+      'modeAsNumber',
+      'fanSpeedAsNumber',
+      'swingModeAsNumber',
+      'restartOnError',
+      'enableUnknownGroupPolling',
+    ]) {
       if (typeof this.config[key] !== 'boolean') {
         const normalized = normalizeBooleanValue(this.config[key]);
         if (normalized !== this.config[key]) {
@@ -993,6 +1102,61 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     } catch (error) {
       this.log.warn(`Polling group 5 data failed: ${error.message}`);
     }
+  }
+
+  async _pollUnknownGroupsSequentially(groups) {
+    if (!this.bridge || !this.bridge.connected || !Array.isArray(groups) || groups.length === 0) {
+      return;
+    }
+
+    if (this._unknownGroupPollingInProgress) {
+      this.log.debug(
+        'Skipping unknown group diagnosis cycle because the previous cycle is still running'
+      );
+      return;
+    }
+
+    this._unknownGroupPollingInProgress = true;
+
+    try {
+      // Safe diagnosis mode: every request below is a 20-byte C1 query only
+      // (41 21 01 <group> 00 ... 00). No control/set/B0 frames are sent here.
+      for (const groupByte of groups) {
+        if (!this.bridge || !this.bridge.connected) {
+          return;
+        }
+
+        const formattedGroup = `0x${formatUnknownGroupId(groupByte)}`;
+        this.log.debug(`Polling unknown group ${formattedGroup} now`);
+
+        try {
+          const response = await this.bridge.getUnknownGroupData(groupByte);
+          if (response) {
+            this.log.debug(
+              `Unknown group ${formattedGroup} response received: responseId=0x${formatUnknownGroupId(
+                response.responseId
+              )}, groupByte=0x${formatUnknownGroupId(response.groupByte)}, payloadHex=${
+                response.payloadHex || ''
+              }`
+            );
+          } else {
+            this.log.debug(`Unknown group ${formattedGroup} returned no response data`);
+          }
+        } catch (error) {
+          this.log.debug(
+            `Unknown group ${formattedGroup} polling failed: ${this._formatError(error)}`
+          );
+        }
+
+        await this._delay(250);
+      }
+    } finally {
+      this._unknownGroupPollingInProgress = false;
+    }
+  }
+
+  _delay(ms) {
+    return new Promise((resolve) => this.setTimeout(resolve, ms));
   }
 
   _extractStatusEntries(status) {
@@ -1170,6 +1334,82 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         );
       }
     }
+  }
+
+  async _applyUnknownGroupData(groupData) {
+    if (!groupData || typeof groupData !== 'object') {
+      return;
+    }
+
+    const groupByte = Number.isInteger(groupData.groupByte) ? groupData.groupByte : null;
+    if (groupByte === null) {
+      this.log.debug('Ignoring unknown group response without groupByte');
+      return;
+    }
+
+    const groupId = `group${formatUnknownGroupId(groupByte)}`;
+    this.log.debug(
+      `Applying unknown group ${groupId}: responseId=0x${formatUnknownGroupId(
+        groupData.responseId
+      )}, groupByte=0x${formatUnknownGroupId(groupByte)}, payloadHex=${groupData.payloadHex || ''}`
+    );
+
+    const rawEntries = {
+      rawFrameHex: groupData.rawFrameHex || '',
+      payloadHex: groupData.payloadHex || '',
+      responseId: groupData.responseId,
+      groupByte,
+      rawBytes: groupData.rawBytes || {},
+      analogCandidates: groupData.analogCandidates || {},
+    };
+
+    for (const [key, value] of Object.entries(rawEntries)) {
+      try {
+        const normalized = this._normalizeRawStatusValue(value);
+        if (!normalized) {
+          continue;
+        }
+
+        await this._ensureUnknownGroupRawState(groupId, key, normalized.type, normalized.role);
+        await this.setStateAsync(`statusRaw.unknownGroups.${groupId}.${key}`, {
+          val: normalized.value,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update unknown group ${groupId}.${key}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _ensureUnknownGroupRawState(groupId, key, type, role) {
+    const stateKey = `${groupId}.${key}`;
+    if (this._knownUnknownGroupRawStates.has(stateKey)) {
+      return;
+    }
+
+    await this.setObjectNotExistsAsync(`statusRaw.unknownGroups.${groupId}`, {
+      type: 'channel',
+      common: {
+        name: `Unknown group ${groupId}`,
+      },
+      native: {},
+    });
+
+    await this.setObjectNotExistsAsync(`statusRaw.unknownGroups.${groupId}.${key}`, {
+      type: 'state',
+      common: {
+        name: key,
+        type,
+        role,
+        read: true,
+        write: false,
+      },
+      native: {},
+    });
+
+    this._knownUnknownGroupRawStates.add(stateKey);
   }
 
   async _ensureRawStatusState(key, type, role) {

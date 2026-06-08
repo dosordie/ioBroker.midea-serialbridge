@@ -42,20 +42,13 @@
       "config": "json"
     },
     "readme": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/README.md",
-    "keywords": [
-      "midea",
-      "hvac",
-      "serial",
-      "climate"
-    ],
+    "keywords": ["midea", "hvac", "serial", "climate"],
     "dependencies": [
       {
         "js-controller": ">=5.0.19"
       }
     ],
-    "authors": [
-      "dosordie <info@dosordie.de>"
-    ],
+    "authors": ["dosordie <info@dosordie.de>"],
     "licenseInformation": {
       "license": "MIT",
       "url": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/LICENSE",
@@ -102,6 +95,9 @@
     "exposeRawStatus": false,
     "exposeRawBytes": false,
     "exposeAnalogCandidates": false,
+    "enableUnknownGroupPolling": false,
+    "unknownGroupPollingInterval": 60,
+    "unknownGroupIds": "",
     "modeAsNumber": false,
     "fanSpeedAsNumber": false,
     "swingModeAsNumber": false,
