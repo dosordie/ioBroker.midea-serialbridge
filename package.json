@@ -1,6 +1,6 @@
 {
   "name": "iobroker.midea-serialbridge",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "ioBroker adapter for controlling Midea climate devices via serial bridge",
   "author": {
     "name": "dosordie"
@@ -39,8 +39,9 @@
   "scripts": {
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,md}\"",
-    "test": "npm run test:raw-parser-helper && npm run lint",
-    "test:raw-parser-helper": "node test/raw-parser-helper.test.js"
+    "test": "npm run test:raw-parser-helper && npm run test:c1-parser && npm run lint",
+    "test:raw-parser-helper": "node test/raw-parser-helper.test.js",
+    "test:c1-parser": "node test/c1-parser.test.js"
   },
   "files": [
     "admin/",

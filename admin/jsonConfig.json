@@ -320,6 +320,13 @@
                     "en": "Power usage (0x41/energy)",
                     "de": "Energieverbrauch (0x41/Energie)"
                   }
+                },
+                {
+                  "value": "getGroup5Data",
+                  "label": {
+                    "en": "Group 5 data (0x41/group 5)",
+                    "de": "Group-5-Daten (0x41/Gruppe 5)"
+                  }
                 }
               ]
             },
