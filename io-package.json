@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "midea-serialbridge",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "titleLang": {
       "en": "Midea Serial Bridge",
       "de": "Midea Serial Bridge",
@@ -55,6 +55,10 @@
       "type": "open-source"
     },
     "news": {
+      "0.0.6": {
+        "en": "Keep raw debug output compact and remove raw byte/analog analysis states.",
+        "de": "Kompakte Rohdebug-Ausgabe beibehalten und Rohbyte-/Analog-Analysezustände entfernen."
+      },
       "0.0.5": {
         "en": "Add regular C1 Group 41 diagnostic polling and experimental candidate sensor datapoints.",
         "de": "Ergänzt reguläres C1-Group-41-Diagnose-Polling und experimentelle Kandidaten-Sensordatenpunkte."
@@ -97,8 +101,6 @@
     "restartInterval": 300,
     "beep": true,
     "exposeRawStatus": false,
-    "exposeRawBytes": false,
-    "exposeAnalogCandidates": false,
     "enableUnknownGroupPolling": false,
     "unknownGroupPollingInterval": 60,
     "unknownGroupIds": "",

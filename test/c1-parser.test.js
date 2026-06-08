@@ -9,7 +9,12 @@ group4[3] = 0x44;
 group4[16] = 0x01;
 group4[17] = 0x23;
 group4[18] = 0x45;
-assert.deepStrictEqual(parser(group4), { totalEnergy: 0, powerUsage: 1.2345, group: 4 });
+const group4Status = parser(group4);
+assert.strictEqual(group4Status.totalEnergy, 0);
+assert.strictEqual(group4Status.powerUsage, 1.2345);
+assert.strictEqual(group4Status.group, 4);
+assert.strictEqual(group4Status.rawFrameHex, '');
+assert.strictEqual(group4Status.payloadHex, group4.toString('hex'));
 
 const group4TotalEnergy = Buffer.from('c121014400193025000000000000000000000000', 'hex');
 assert.strictEqual(parser(group4TotalEnergy).totalEnergy, 1930.25);
@@ -75,9 +80,12 @@ const shortGroup41 = parser(Buffer.from([0xc1, 0x21, 0x01, 0x41, 0x21]));
 assert.strictEqual(shortGroup41.compressorFrequencyCandidate, undefined);
 assert.strictEqual(shortGroup41.group, 1);
 
-const debug = parser(group5, { exposeRawBytes: true, frame: Buffer.from([0xaa, 0xbb]) });
+const debug = parser(group5, { frame: Buffer.from([0xaa, 0xbb]) });
 assert.strictEqual(debug.rawFrameHex, 'aabb');
 assert.strictEqual(debug.payloadHex, group5.toString('hex'));
-assert.strictEqual(debug.rawBytes['04'].u8, 55);
+assert.strictEqual(debug.rawBytes, undefined);
+assert.strictEqual(debug.rawByte04, undefined);
+assert.strictEqual(debug.rawByte04Bits, undefined);
+assert.strictEqual(debug.analogCandidates, undefined);
 
 console.log('C1 parser tests passed');
