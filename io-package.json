@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "midea-serialbridge",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "titleLang": {
       "en": "Midea Serial Bridge",
       "de": "Midea Serial Bridge",

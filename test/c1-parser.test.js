@@ -9,7 +9,13 @@ group4[3] = 0x44;
 group4[16] = 0x01;
 group4[17] = 0x23;
 group4[18] = 0x45;
-assert.deepStrictEqual(parser(group4), { powerUsage: 1.2345, group: 4 });
+assert.deepStrictEqual(parser(group4), { totalEnergy: 0, powerUsage: 1.2345, group: 4 });
+
+const group4TotalEnergy = Buffer.from('c121014400193025000000000000000000000000', 'hex');
+assert.strictEqual(parser(group4TotalEnergy).totalEnergy, 1930.25);
+
+const group4EarlierTotalEnergy = Buffer.from('c121014400193014000000000000000000000000', 'hex');
+assert.strictEqual(parser(group4EarlierTotalEnergy).totalEnergy, 1930.14);
 
 const group5 = Buffer.alloc(20, 0x00);
 group5[0] = 0xc1;

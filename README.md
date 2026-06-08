@@ -37,6 +37,7 @@ The following datapoints are available out of the box:
 | `targetTemperature` | Desired room temperature | ✓ | ✓ |
 | `indoorTemperature` | Current indoor temperature | ✓ | ✗ |
 | `outdoorTemperature` | Current outdoor temperature | ✓ | ✗ |
+| `totalEnergy` | Internal total energy counter from C1 group 4 (kWh) | ✓ | ✗ |
 | `fanSpeed` | Fan speed (auto, low, medium, high) | ✓ | ✓ |
 | `swingMode` | Swing mode (off, vertical, horizontal, both) | ✓ | ✓ |
 | `ecoMode` | Eco mode | ✓ | ✓ |
