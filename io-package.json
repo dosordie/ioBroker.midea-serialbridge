@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "midea-serialbridge",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "titleLang": {
       "en": "Midea Serial Bridge",
       "de": "Midea Serial Bridge",
@@ -55,6 +55,10 @@
       "type": "open-source"
     },
     "news": {
+      "0.0.9": {
+        "en": "Extend safe unknown-group diagnosis to 0x20-0x7F and neutralize Group 41 byte 08 output.",
+        "de": "Erweitert die sichere Unknown-Group-Diagnose auf 0x20-0x7F und gibt Group-41 Byte 08 neutraler aus."
+      },
       "0.0.8": {
         "en": "Refine C1 Group 41 diagnostic sensor names and scaling from new logs.",
         "de": "Verfeinert C1-Group-41-Diagnosesensoren, Benennungen und Skalierung anhand neuer Logs."

@@ -2,9 +2,14 @@
 
 ## **WORK IN PROGRESS**
 
-- refine C1 Group 41 diagnostic sensor names, byte mappings and temperature scaling from new logs
-- expose Group 41 raw frame/payload hex values and update compact raw hex output with Group 41 frames
-- expand safe unknown-group diagnosis polling to optional group bytes 0x30-0x5F with up to 16 sequential groups
+## 0.0.9 (2026-06-08)
+
+- extend safe unknown-group diagnosis polling to optional group bytes 0x20-0x7F with up to 16 sequential groups while skipping regular groups 0x41, 0x44 and 0x45
+- rename C1 Group 41 diagnostic datapoints for confirmed compressor, indoor pipe, indoor heat exchanger and outdoor-temperature meanings
+- expose C1 Group 41 byte 08 neutrally as raw value plus one temperature candidate and keep byte 12 marked as an outdoor heat-exchanger temperature candidate
+- delete legacy Group 41 candidate sensor states on startup and keep raw debug output compact without rawByte/analogCandidates mass states
+
+## 0.0.8 (2026-06-08)
 
 - add optional automatic adapter restart on connection errors with configurable delay
 - remove raw byte and analog candidate analysis states; keep only compact raw hex debug output
