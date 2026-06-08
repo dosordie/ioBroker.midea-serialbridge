@@ -173,8 +173,8 @@
           },
           "default": false,
           "help": {
-            "en": "Sends only safe 20-byte C1 query frames (41 21 01 <group> 00 ... 00) for configured group bytes.",
-            "de": "Sendet ausschließlich sichere 20-Byte-C1-Query-Frames (41 21 01 <group> 00 ... 00) für konfigurierte Gruppenbytes."
+            "en": "Experimental diagnosis mode. Only Midea query groups 0x30-0x5F. No control commands. Sends only safe 20-byte C1 query frames (41 21 01 <group> 00 ... 00).",
+            "de": "Experimenteller Diagnosemodus. Nur Midea-Query-Gruppen 0x30-0x5F. Keine Steuerbefehle. Sendet ausschließlich sichere 20-Byte-C1-Query-Frames (41 21 01 <group> 00 ... 00)."
           },
           "xs": 12,
           "sm": 6,
@@ -209,10 +209,10 @@
             "de": "Unbekannte Gruppen-IDs"
           },
           "default": "",
-          "placeholder": "40,41,42,43,46,47,48,49",
+          "placeholder": "30,31,40,46,50,5F",
           "help": {
-            "en": "Comma-separated hex group bytes from 0x40 to 0x4F. At most 8 values are used; duplicates and invalid values are ignored.",
-            "de": "Kommagetrennte Hex-Gruppenbytes von 0x40 bis 0x4F. Maximal 8 Werte werden genutzt; doppelte und ungültige Werte werden ignoriert."
+            "en": "Comma-separated hex group bytes from 0x30 to 0x5F. At most 16 values are used sequentially; supported groups 0x41, 0x44, and 0x45 are skipped.",
+            "de": "Kommagetrennte Hex-Gruppenbytes von 0x30 bis 0x5F. Maximal 16 Werte werden nacheinander genutzt; unterstützte Gruppen 0x41, 0x44 und 0x45 werden übersprungen."
           },
           "xs": 12,
           "sm": 12,

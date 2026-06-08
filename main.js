@@ -1125,7 +1125,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       return;
     }
 
-    this.log.debug('Polling group 41 diagnostic data now');
+    this.log.debug('Polling group 41 data now');
 
     try {
       await this.bridge.getGroup41Data();
@@ -1157,9 +1157,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         }
 
         const formattedGroup = `0x${formatUnknownGroupId(groupByte)}`;
-        if (groupByte === 0x41) {
+        if ([0x41, 0x44, 0x45].includes(groupByte)) {
           this.log.debug(
-            'Group 41 is supported as getGroup41Data; skipping unknown group diagnosis polling for 0x41'
+            `Group ${formatUnknownGroupId(groupByte)} is already supported; skipping unknown group diagnosis polling for ${formattedGroup}`
           );
           continue;
         }
@@ -1415,8 +1415,17 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       return;
     }
 
+    this.log.debug(
+      `Received group 41 payload: ${group41Data.group41_payloadHex || group41Data.payloadHex || ''}`
+    );
+    this.log.debug(
+      `Decoded group 41 diagnostic data: compressorFrequencyCandidate=${group41Data.compressorFrequencyCandidate}, hotGasOrCondenserTemperatureCandidate=${group41Data.hotGasOrCondenserTemperatureCandidate}, evaporatorTemperature1Candidate=${group41Data.evaporatorTemperature1Candidate}, evaporatorTemperature2Candidate=${group41Data.evaporatorTemperature2Candidate}, outdoorCoilTemperatureCandidate=${group41Data.outdoorCoilTemperatureCandidate}, outdoorAmbientTemperatureCandidate=${group41Data.outdoorAmbientTemperatureCandidate}`
+    );
+
     if (this.config && this.config.exposeRawStatus) {
       const rawEntries = Object.entries({
+        rawFrameHex: group41Data.rawFrameHex || group41Data.group41_rawFrameHex || '',
+        payloadHex: group41Data.payloadHex || group41Data.group41_payloadHex || '',
         group41_rawFrameHex: group41Data.group41_rawFrameHex || group41Data.rawFrameHex || '',
         group41_payloadHex: group41Data.group41_payloadHex || group41Data.payloadHex || '',
       });
