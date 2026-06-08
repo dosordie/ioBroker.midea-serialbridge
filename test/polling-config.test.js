@@ -108,26 +108,41 @@ assert.deepStrictEqual(
   { id: 'getPowerUsage', enabled: true, interval: 300 }
 );
 
-assert.deepStrictEqual(parseUnknownGroupIds('40,41,46').groups, [0x40, 0x41, 0x46]);
-assert.deepStrictEqual(parseUnknownGroupIds('0x40,0x41').groups, [0x40, 0x41]);
-assert.deepStrictEqual(parseUnknownGroupIds('29,30,40,50,60,zz,0x5f'), {
-  groups: [0x30, 0x40, 0x50, 0x5f],
-  invalid: ['29', '60', 'zz'],
+assert.deepStrictEqual(parseUnknownGroupIds('40,41,46'), {
+  groups: [0x40, 0x46],
+  invalid: [],
   duplicates: [],
+  skippedRegular: [0x41],
+  truncated: false,
+});
+assert.deepStrictEqual(parseUnknownGroupIds('0x40,0x41'), {
+  groups: [0x40],
+  invalid: [],
+  duplicates: [],
+  skippedRegular: [0x41],
+  truncated: false,
+});
+assert.deepStrictEqual(parseUnknownGroupIds('20,21,30,31,41,44,45,50,51,60,7F,80,xx'), {
+  groups: [0x20, 0x21, 0x30, 0x31, 0x50, 0x51, 0x60, 0x7f],
+  invalid: ['80', 'xx'],
+  duplicates: [],
+  skippedRegular: [0x41, 0x44, 0x45],
   truncated: false,
 });
 assert.deepStrictEqual(parseUnknownGroupIds('40,0x40,41,41'), {
-  groups: [0x40, 0x41],
+  groups: [0x40],
   invalid: [],
   duplicates: [0x40, 0x41],
+  skippedRegular: [0x41],
   truncated: false,
 });
-assert.deepStrictEqual(parseUnknownGroupIds('30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46'), {
+assert.deepStrictEqual(parseUnknownGroupIds('20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36'), {
   groups: [
-    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
+    0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
   ],
   invalid: [],
   duplicates: [],
+  skippedRegular: [],
   truncated: true,
 });
 

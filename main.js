@@ -604,6 +604,16 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       );
     }
 
+    if (result.skippedRegular && result.skippedRegular.length > 0) {
+      for (const group of result.skippedRegular) {
+        this.log.debug(
+          `Skipping unknown group 0x${formatUnknownGroupId(
+            group
+          )} because it is supported as regular group`
+        );
+      }
+    }
+
     if (result.truncated) {
       this.log.warn(`Ignoring unknown group ids beyond the limit of ${UNKNOWN_GROUP_MAX_COUNT}`);
     }
@@ -1158,13 +1168,6 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         }
 
         const formattedGroup = `0x${formatUnknownGroupId(groupByte)}`;
-        if ([0x41, 0x44, 0x45].includes(groupByte)) {
-          this.log.debug(
-            `Group ${formatUnknownGroupId(groupByte)} is already supported; skipping unknown group diagnosis polling for ${formattedGroup}`
-          );
-          continue;
-        }
-
         this.log.debug(`Polling unknown group ${formattedGroup} now`);
 
         try {
@@ -1220,8 +1223,10 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     const legacyGroup41CandidateStates = [
       'sensors.compressorFrequencyCandidate',
       'sensors.hotGasOrCondenserTemperatureCandidate',
+      'sensors.outdoorPipeTemperatureCandidate',
       'sensors.evaporatorTemperature1Candidate',
       'sensors.evaporatorTemperature2Candidate',
+      'sensors.outdoorCoilTemperatureCandidate',
       'sensors.outdoorAmbientTemperatureCandidate',
     ];
 
@@ -1445,7 +1450,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       `Received group 41 payload: ${group41Data.group41_payloadHex || group41Data.payloadHex || ''}`
     );
     this.log.debug(
-      `Decoded group 41 diagnostic data: compressorFrequency=${group41Data.compressorFrequency}, outdoorPipeTemperatureCandidate=${group41Data.outdoorPipeTemperatureCandidate}, indoorPipeTemperature=${group41Data.indoorPipeTemperature}, indoorHeatExchangerTemperature=${group41Data.indoorHeatExchangerTemperature}, outdoorCoilTemperatureCandidate=${group41Data.outdoorCoilTemperatureCandidate}, outdoorTemperatureGroup41=${group41Data.outdoorTemperatureGroup41}`
+      `Decoded group 41 diagnostic data: compressorFrequency=${group41Data.compressorFrequency}, group41Byte08Raw=${group41Data.group41Byte08Raw}, group41Byte08TemperatureCandidate=${group41Data.group41Byte08TemperatureCandidate}, indoorPipeTemperature=${group41Data.indoorPipeTemperature}, indoorHeatExchangerTemperature=${group41Data.indoorHeatExchangerTemperature}, outdoorHeatExchangerTemperatureCandidate=${group41Data.outdoorHeatExchangerTemperatureCandidate}, outdoorTemperatureGroup41=${group41Data.outdoorTemperatureGroup41}`
     );
 
     if (this.config && this.config.exposeRawStatus) {
@@ -1460,10 +1465,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
     const mapped = {
       compressorFrequency: group41Data.compressorFrequency,
-      outdoorPipeTemperatureCandidate: group41Data.outdoorPipeTemperatureCandidate,
+      group41Byte08Raw: group41Data.group41Byte08Raw,
+      group41Byte08TemperatureCandidate: group41Data.group41Byte08TemperatureCandidate,
       indoorPipeTemperature: group41Data.indoorPipeTemperature,
       indoorHeatExchangerTemperature: group41Data.indoorHeatExchangerTemperature,
-      outdoorCoilTemperatureCandidate: group41Data.outdoorCoilTemperatureCandidate,
+      outdoorHeatExchangerTemperatureCandidate:
+        group41Data.outdoorHeatExchangerTemperatureCandidate,
       outdoorTemperatureGroup41: group41Data.outdoorTemperatureGroup41,
     };
 
@@ -1508,8 +1515,6 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     const rawEntries = {
       rawFrameHex: groupData.rawFrameHex || '',
       payloadHex: groupData.payloadHex || '',
-      responseId: groupData.responseId,
-      groupByte,
     };
 
     for (const [key, value] of Object.entries(rawEntries)) {
