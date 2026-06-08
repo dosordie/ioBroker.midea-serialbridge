@@ -167,6 +167,10 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         log: this.log,
         beepOnCommand: this.config.beep !== false,
         valueRepresentation: this.valueRepresentation,
+        exposeRawBytes: !!(this.config.exposeRawStatus && this.config.exposeRawBytes),
+        exposeAnalogCandidates: !!(
+          this.config.exposeRawStatus && this.config.exposeAnalogCandidates
+        ),
       });
 
       this.bridge.on('connected', () => {
@@ -844,12 +848,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
-    if (typeof this.config.exposeRawStatus !== 'boolean') {
-      const rawValue = this.config.exposeRawStatus;
-      const normalizedExposeRawStatus = normalizeBooleanValue(rawValue);
-      if (normalizedExposeRawStatus !== rawValue || rawValue === undefined) {
-        this.config.exposeRawStatus = normalizedExposeRawStatus;
-        changed = true;
+    for (const key of ['exposeRawStatus', 'exposeRawBytes', 'exposeAnalogCandidates']) {
+      if (typeof this.config[key] !== 'boolean') {
+        const rawValue = this.config[key];
+        const normalized = normalizeBooleanValue(rawValue);
+        if (normalized !== rawValue || rawValue === undefined) {
+          this.config[key] = normalized;
+          changed = true;
+        }
       }
     }
 
@@ -1009,15 +1015,16 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
   async _applyStatusUpdate(status, rawStatus) {
     const entries = this._extractStatusEntries(status);
-    if (!entries || entries.length === 0) {
-      return;
-    }
 
     if (this.config && this.config.exposeRawStatus) {
       const rawEntries = this._extractStatusEntries(rawStatus) || (!rawStatus ? entries : null);
       if (rawEntries && rawEntries.length > 0) {
         await this._applyRawStatus(rawEntries);
       }
+    }
+
+    if (!entries || entries.length === 0) {
+      return;
     }
 
     for (const [datapointId, value] of entries) {
@@ -1092,6 +1099,13 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   async _applyPowerUsage(usage) {
     if (!usage || typeof usage !== 'object') {
       return;
+    }
+
+    if (this.config && this.config.exposeRawStatus) {
+      const rawEntries = this._extractStatusEntries(usage);
+      if (rawEntries && rawEntries.length > 0) {
+        await this._applyRawStatus(rawEntries);
+      }
     }
 
     if (!this.datapointById.has('powerUsage')) {
