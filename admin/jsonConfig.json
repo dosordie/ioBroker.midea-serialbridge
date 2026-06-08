@@ -207,8 +207,8 @@
           },
           "default": false,
           "help": {
-            "en": "Allow overriding the default interval for the commands listed below.",
-            "de": "Ermöglicht es, das Standardintervall für die unten aufgeführten Befehle zu überschreiben."
+            "en": "Legacy compatibility switch only; configured commands below are always used when present.",
+            "de": "Nur noch Kompatibilitätsschalter; die unten konfigurierten Befehle werden immer verwendet, wenn sie vorhanden sind."
           },
           "xs": 12,
           "sm": 6,
@@ -341,6 +341,28 @@
               "min": 5,
               "max": 3600,
               "unit": "s"
+            }
+          ],
+          "default": [
+            {
+              "id": "getStatus",
+              "enabled": true,
+              "interval": 60
+            },
+            {
+              "id": "getCapabilities",
+              "enabled": false,
+              "interval": 3600
+            },
+            {
+              "id": "getPowerUsage",
+              "enabled": false,
+              "interval": 300
+            },
+            {
+              "id": "getGroup5Data",
+              "enabled": false,
+              "interval": 300
             }
           ]
         }

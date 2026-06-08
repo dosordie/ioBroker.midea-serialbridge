@@ -5,6 +5,12 @@ const { isDeepStrictEqual } = require('node:util');
 const { MideaSerialBridge } = require('./lib/midea-serial-bridge');
 const { DATA_POINTS } = require('./lib/datapoints');
 const {
+  POLLING_METHOD_MAP,
+  describePollingEntries,
+  normalizeBooleanValue,
+  normalizePollingRequests,
+} = require('./lib/polling-config');
+const {
   MODE_ALIASES,
   MODE_NAME_TO_VALUE,
   MODE_NAME_TO_LEGACY_VALUE,
@@ -19,23 +25,6 @@ const {
   normalizeString,
 } = require('./lib/value-mappings');
 const { EXIT_CODES } = utils;
-
-function normalizeBooleanValue(value) {
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) {
-      return false;
-    }
-    if (normalized === 'true' || normalized === '1') {
-      return true;
-    }
-    if (normalized === 'false' || normalized === '0') {
-      return false;
-    }
-  }
-
-  return value === true || value === 1;
-}
 
 function cloneRecursively(value, seen) {
   if (value === null || typeof value !== 'object') {
@@ -87,27 +76,6 @@ function cloneDatapointDefinition(datapoint) {
   return clone;
 }
 
-const POLLING_METHODS = [
-  {
-    id: 'getStatus',
-    defaultInterval: 60,
-  },
-  {
-    id: 'getCapabilities',
-    defaultInterval: 3600,
-  },
-  {
-    id: 'getPowerUsage',
-    defaultInterval: 300,
-  },
-  {
-    id: 'getGroup5Data',
-    defaultInterval: 300,
-  },
-];
-
-const POLLING_METHOD_MAP = new Map(POLLING_METHODS.map((entry) => [entry.id, entry]));
-
 class MideaSerialBridgeAdapter extends utils.Adapter {
   constructor(options = {}) {
     super({
@@ -149,7 +117,11 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     try {
       await this.setStateAsync('info.connection', false, true);
 
+      this.log.debug(`Polling config found: ${this._describeRawPollingConfig()}`);
       const normalizationResult = this._normalizeConfig();
+      this.log.debug(
+        `Polling config normalized: ${describePollingEntries(this.config.pollingRequests)}`
+      );
       if (normalizationResult.changed) {
         await this._persistNormalizedConfig(normalizationResult.normalizedConfig);
       }
@@ -544,16 +516,22 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
   _startPolling() {
     this._clearPolling();
-    const pollingConfig = this._buildPollingConfig().filter((config) => config.enabled);
-    if (pollingConfig.length === 0) {
-      this.log.debug('No polling requests enabled; skipping scheduled commands');
-      return;
-    }
+    const pollingConfig = this._buildPollingConfig();
+    const activeConfig = pollingConfig.filter((config) => config.enabled);
+    this.log.debug(
+      `Polling requests active: ${
+        activeConfig.length > 0 ? activeConfig.map((config) => config.id).join(', ') : 'none'
+      }`
+    );
 
     for (const config of pollingConfig) {
-      const method = POLLING_METHOD_MAP.get(config.id);
-      if (!method) {
+      if (!POLLING_METHOD_MAP.has(config.id)) {
         this.log.debug(`Ignoring unknown polling request ${config.id}`);
+        continue;
+      }
+
+      if (!config.enabled) {
+        this.log.debug(`Polling ${config.id} disabled`);
         continue;
       }
 
@@ -563,6 +541,10 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       const timer = setInterval(handler, intervalMs);
       this.pollTimers.set(config.id, timer);
       handler();
+    }
+
+    if (activeConfig.length === 0) {
+      this.log.debug('No polling requests enabled; skipping scheduled commands');
     }
   }
 
@@ -644,28 +626,22 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
   }
 
   _buildPollingConfig() {
-    const defaultInterval = Number(this.config.pollingInterval) || 60;
-    const entries = this._getPollingEntries();
-    const map = new Map();
-    for (const entry of entries) {
-      if (!entry || !entry.id) {
-        continue;
-      }
-      map.set(entry.id, {
-        enabled: entry.enabled !== false,
-        interval: Number(entry.interval) || defaultInterval,
-      });
-    }
+    return normalizePollingRequests(this.config || {});
+  }
 
-    return POLLING_METHODS.map((method) => {
-      const entry = map.get(method.id);
-      const fallbackInterval = method.id === 'getStatus' ? defaultInterval : method.defaultInterval;
-      return {
-        id: method.id,
-        enabled: entry ? entry.enabled : method.id === 'getStatus',
-        interval: entry ? entry.interval : fallbackInterval,
-      };
-    });
+  _describeRawPollingConfig() {
+    if (Array.isArray(this.config && this.config.pollingRequests)) {
+      return `native.pollingRequests (${describePollingEntries(this.config.pollingRequests)})`;
+    }
+    if (
+      this.config &&
+      this.config.polling &&
+      typeof this.config.polling === 'object' &&
+      Array.isArray(this.config.polling.requests)
+    ) {
+      return `native.polling.requests (${describePollingEntries(this.config.polling.requests)})`;
+    }
+    return 'none';
   }
 
   _normalizeConfig() {
@@ -825,17 +801,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
-    const pollingIsObject = this.config.polling && typeof this.config.polling === 'object';
-    const existingRequests =
-      pollingIsObject && Array.isArray(this.config.polling.requests)
-        ? this.config.polling.requests
-        : null;
-
-    if (!existingRequests && Array.isArray(this.config.pollingRequests)) {
-      this.config.polling = {
-        ...(pollingIsObject ? this.config.polling : {}),
-        requests: this.config.pollingRequests,
-      };
+    const normalizedPollingRequests = normalizePollingRequests(this.config);
+    if (!isDeepStrictEqual(this.config.pollingRequests, normalizedPollingRequests)) {
+      this.config.pollingRequests = normalizedPollingRequests;
       changed = true;
     }
 
@@ -848,16 +816,20 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
+    if (typeof this.config.customPolling !== 'boolean') {
+      this.config.customPolling = false;
+      changed = true;
+    }
+
     if (
       this.config.polling &&
-      Array.isArray(this.config.polling.requests) &&
-      !Array.isArray(this.config.pollingRequests)
+      typeof this.config.polling === 'object' &&
+      Object.prototype.hasOwnProperty.call(this.config.polling, 'requests')
     ) {
-      this.config.pollingRequests = this.config.polling.requests.map((entry) => ({
-        id: entry.id,
-        enabled: entry.enabled !== false,
-        interval: Number(entry.interval) || Number(this.config.pollingInterval) || 60,
-      }));
+      delete this.config.polling.requests;
+      if (Object.keys(this.config.polling).length === 0) {
+        delete this.config.polling;
+      }
       changed = true;
     }
 
@@ -1000,6 +972,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       return;
     }
 
+    this.log.debug('Polling power usage now');
+
     try {
       await this.bridge.getPowerUsage();
     } catch (error) {
@@ -1011,6 +985,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     if (!this.bridge || !this.bridge.connected) {
       return;
     }
+
+    this.log.debug('Polling group 5 data now');
 
     try {
       await this.bridge.getGroup5Data();
@@ -1275,16 +1251,6 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     });
 
     this._knownCapabilityStates.add(key);
-  }
-
-  _getPollingEntries() {
-    if (this.config.polling && Array.isArray(this.config.polling.requests)) {
-      return this.config.polling.requests;
-    }
-    if (Array.isArray(this.config.pollingRequests)) {
-      return this.config.pollingRequests;
-    }
-    return [];
   }
 
   _normalizeWriteValue(datapoint, value) {
@@ -1560,7 +1526,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 }
 
 if (module.parent) {
-  module.exports = (options) => new MideaSerialBridgeAdapter(options);
+  const createAdapter = (options) => new MideaSerialBridgeAdapter(options);
+  createAdapter.MideaSerialBridgeAdapter = MideaSerialBridgeAdapter;
+  module.exports = createAdapter;
 } else {
   new MideaSerialBridgeAdapter();
 }
