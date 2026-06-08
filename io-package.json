@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "midea-serialbridge",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "titleLang": {
       "en": "Midea Serial Bridge",
       "de": "Midea Serial Bridge",
@@ -42,13 +42,20 @@
       "config": "json"
     },
     "readme": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/README.md",
-    "keywords": ["midea", "hvac", "serial", "climate"],
+    "keywords": [
+      "midea",
+      "hvac",
+      "serial",
+      "climate"
+    ],
     "dependencies": [
       {
         "js-controller": ">=5.0.19"
       }
     ],
-    "authors": ["dosordie <info@dosordie.de>"],
+    "authors": [
+      "dosordie <info@dosordie.de>"
+    ],
     "licenseInformation": {
       "license": "MIT",
       "url": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/LICENSE",

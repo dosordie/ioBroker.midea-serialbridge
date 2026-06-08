@@ -100,6 +100,10 @@ const POLLING_METHODS = [
     id: 'getPowerUsage',
     defaultInterval: 300,
   },
+  {
+    id: 'getGroup5Data',
+    defaultInterval: 300,
+  },
 ];
 
 const POLLING_METHOD_MAP = new Map(POLLING_METHODS.map((entry) => [entry.id, entry]));
@@ -202,6 +206,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       this.bridge.on('powerUsage', (usage) => {
         this._applyPowerUsage(usage).catch((error) => {
           this.log.debug(`Failed to process power usage update: ${this._formatError(error)}`);
+        });
+      });
+
+      this.bridge.on('group5Data', (group5Data) => {
+        this._applyGroup5Data(group5Data).catch((error) => {
+          this.log.debug(`Failed to process group 5 update: ${this._formatError(error)}`);
         });
       });
 
@@ -625,6 +635,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       case 'getPowerUsage':
         this._pollPowerUsage();
         break;
+      case 'getGroup5Data':
+        this._pollGroup5Data();
+        break;
       default:
         this.log.debug(`No polling handler registered for ${methodId}`);
     }
@@ -994,6 +1007,18 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
   }
 
+  async _pollGroup5Data() {
+    if (!this.bridge || !this.bridge.connected) {
+      return;
+    }
+
+    try {
+      await this.bridge.getGroup5Data();
+    } catch (error) {
+      this.log.warn(`Polling group 5 data failed: ${error.message}`);
+    }
+  }
+
   _extractStatusEntries(status) {
     if (!status || typeof status !== 'object') {
       return null;
@@ -1121,6 +1146,44 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       });
     } catch (error) {
       this.log.debug(`Failed to update power usage state: ${this._formatError(error)}`);
+    }
+  }
+
+  async _applyGroup5Data(group5Data) {
+    if (!group5Data || typeof group5Data !== 'object') {
+      return;
+    }
+
+    if (this.config && this.config.exposeRawStatus) {
+      const rawEntries = this._extractStatusEntries(group5Data);
+      if (rawEntries && rawEntries.length > 0) {
+        await this._applyRawStatus(rawEntries);
+      }
+    }
+
+    const mapped = {
+      indoorHumidity: group5Data.indoorHumidity,
+      outdoorFanSpeed: group5Data.outdoorFanSpeed,
+      defrostActive: group5Data.defrostActive,
+    };
+
+    for (const [datapointId, value] of Object.entries(mapped)) {
+      if (!this.datapointById.has(datapointId) || value === undefined) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update group 5 state ${datapointId}: ${this._formatError(error)}`
+        );
+      }
     }
   }
 

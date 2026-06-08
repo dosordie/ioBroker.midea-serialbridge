@@ -36,5 +36,6 @@
   "swingModeAsNumber_help": "Stellt den Swing-Zustand als numerische Codes statt beschreibender Texte bereit und akzeptiert ihn so.",
   "getStatus": "Status (0x41)",
   "getCapabilities": "Fähigkeiten (0xB5)",
-  "getPowerUsage": "Energieverbrauch (0x41/Energie)"
+  "getPowerUsage": "Energieverbrauch (0x41/Energie)",
+  "getGroup5Data": "Group-5-Daten (0x41/Gruppe 5)"
 }
