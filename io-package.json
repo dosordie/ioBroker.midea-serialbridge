@@ -106,7 +106,28 @@
     "fanSpeedAsNumber": false,
     "swingModeAsNumber": false,
     "customPolling": false,
-    "pollingRequests": []
+    "pollingRequests": [
+      {
+        "id": "getStatus",
+        "enabled": true,
+        "interval": 60
+      },
+      {
+        "id": "getCapabilities",
+        "enabled": false,
+        "interval": 3600
+      },
+      {
+        "id": "getPowerUsage",
+        "enabled": false,
+        "interval": 300
+      },
+      {
+        "id": "getGroup5Data",
+        "enabled": false,
+        "interval": 300
+      }
+    ]
   },
   "objects": [],
   "instanceObjects": []
