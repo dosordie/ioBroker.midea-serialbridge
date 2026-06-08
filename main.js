@@ -5,6 +5,16 @@ const { isDeepStrictEqual } = require('node:util');
 const { MideaSerialBridge } = require('./lib/midea-serial-bridge');
 const { DATA_POINTS } = require('./lib/datapoints');
 const {
+  POLLING_METHOD_MAP,
+  UNKNOWN_GROUP_MAX_COUNT,
+  describePollingEntries,
+  formatUnknownGroupId,
+  normalizeBooleanValue,
+  normalizePollingRequests,
+  normalizeUnknownGroupPollingInterval,
+  parseUnknownGroupIds,
+} = require('./lib/polling-config');
+const {
   MODE_ALIASES,
   MODE_NAME_TO_VALUE,
   MODE_NAME_TO_LEGACY_VALUE,
@@ -19,23 +29,6 @@ const {
   normalizeString,
 } = require('./lib/value-mappings');
 const { EXIT_CODES } = utils;
-
-function normalizeBooleanValue(value) {
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) {
-      return false;
-    }
-    if (normalized === 'true' || normalized === '1') {
-      return true;
-    }
-    if (normalized === 'false' || normalized === '0') {
-      return false;
-    }
-  }
-
-  return value === true || value === 1;
-}
 
 function cloneRecursively(value, seen) {
   if (value === null || typeof value !== 'object') {
@@ -87,23 +80,6 @@ function cloneDatapointDefinition(datapoint) {
   return clone;
 }
 
-const POLLING_METHODS = [
-  {
-    id: 'getStatus',
-    defaultInterval: 60,
-  },
-  {
-    id: 'getCapabilities',
-    defaultInterval: 3600,
-  },
-  {
-    id: 'getPowerUsage',
-    defaultInterval: 300,
-  },
-];
-
-const POLLING_METHOD_MAP = new Map(POLLING_METHODS.map((entry) => [entry.id, entry]));
-
 class MideaSerialBridgeAdapter extends utils.Adapter {
   constructor(options = {}) {
     super({
@@ -119,6 +95,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     this._restartTimer = null;
     this._knownCapabilityStates = new Set();
     this._knownRawStatusStates = new Set();
+    this._knownUnknownGroupRawStates = new Set();
+    this._unknownGroupPollingInProgress = false;
     this.valueRepresentation = { mode: false, fanSpeed: false, swingMode: false };
 
     this._unhandledRejectionHandler = (reason) => {
@@ -145,7 +123,11 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     try {
       await this.setStateAsync('info.connection', false, true);
 
+      this.log.debug(`Polling config found: ${this._describeRawPollingConfig()}`);
       const normalizationResult = this._normalizeConfig();
+      this.log.debug(
+        `Polling config normalized: ${describePollingEntries(this.config.pollingRequests)}`
+      );
       if (normalizationResult.changed) {
         await this._persistNormalizedConfig(normalizationResult.normalizedConfig);
       }
@@ -158,6 +140,8 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       }
 
       await this._ensureObjects();
+      await this._cleanupRemovedRawAnalysisStates();
+      await this._cleanupLegacyGroup41CandidateStates();
       this.subscribeStates('*');
 
       this.bridge = new MideaSerialBridge({
@@ -198,6 +182,24 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       this.bridge.on('powerUsage', (usage) => {
         this._applyPowerUsage(usage).catch((error) => {
           this.log.debug(`Failed to process power usage update: ${this._formatError(error)}`);
+        });
+      });
+
+      this.bridge.on('group5Data', (group5Data) => {
+        this._applyGroup5Data(group5Data).catch((error) => {
+          this.log.debug(`Failed to process group 5 update: ${this._formatError(error)}`);
+        });
+      });
+
+      this.bridge.on('group41Data', (group41Data) => {
+        this._applyGroup41Data(group41Data).catch((error) => {
+          this.log.debug(`Failed to process group 41 update: ${this._formatError(error)}`);
+        });
+      });
+
+      this.bridge.on('unknownGroupData', (groupData) => {
+        this._applyUnknownGroupData(groupData).catch((error) => {
+          this.log.debug(`Failed to process unknown group update: ${this._formatError(error)}`);
         });
       });
 
@@ -363,6 +365,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       native: {},
     });
 
+    await this.setObjectNotExistsAsync('statusRaw.unknownGroups', {
+      type: 'channel',
+      common: {
+        name: 'Unknown group diagnosis values',
+      },
+      native: {},
+    });
+
     await this.setObjectNotExistsAsync('capabilities', {
       type: 'channel',
       common: {
@@ -402,6 +412,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
       if (datapoint.unit) {
         common.unit = datapoint.unit;
+      }
+      if (datapoint.desc) {
+        common.desc = datapoint.desc;
       }
       if (datapoint.states) {
         common.states = datapoint.states;
@@ -530,16 +543,22 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
   _startPolling() {
     this._clearPolling();
-    const pollingConfig = this._buildPollingConfig().filter((config) => config.enabled);
-    if (pollingConfig.length === 0) {
-      this.log.debug('No polling requests enabled; skipping scheduled commands');
-      return;
-    }
+    const pollingConfig = this._buildPollingConfig();
+    const activeConfig = pollingConfig.filter((config) => config.enabled);
+    this.log.debug(
+      `Polling requests active: ${
+        activeConfig.length > 0 ? activeConfig.map((config) => config.id).join(', ') : 'none'
+      }`
+    );
 
     for (const config of pollingConfig) {
-      const method = POLLING_METHOD_MAP.get(config.id);
-      if (!method) {
+      if (!POLLING_METHOD_MAP.has(config.id)) {
         this.log.debug(`Ignoring unknown polling request ${config.id}`);
+        continue;
+      }
+
+      if (!config.enabled) {
+        this.log.debug(`Polling ${config.id} disabled`);
         continue;
       }
 
@@ -550,6 +569,83 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       this.pollTimers.set(config.id, timer);
       handler();
     }
+
+    this._startUnknownGroupPolling();
+
+    if (activeConfig.length === 0 && !this._isUnknownGroupPollingEnabled()) {
+      this.log.debug('No polling requests enabled; skipping scheduled commands');
+    }
+  }
+
+  _isUnknownGroupPollingEnabled() {
+    return !!(this.config && this.config.enableUnknownGroupPolling);
+  }
+
+  _getUnknownGroupPollingGroups() {
+    const result = parseUnknownGroupIds(this.config && this.config.unknownGroupIds);
+    this._logUnknownGroupParsingIssues(result);
+    return result.groups;
+  }
+
+  _logUnknownGroupParsingIssues(result) {
+    if (!result) {
+      return;
+    }
+
+    if (result.invalid && result.invalid.length > 0) {
+      this.log.warn(`Ignoring invalid unknown group id(s): ${result.invalid.join(', ')}`);
+    }
+
+    if (result.duplicates && result.duplicates.length > 0) {
+      this.log.debug(
+        `Ignoring duplicate unknown group id(s): ${result.duplicates
+          .map((group) => `0x${formatUnknownGroupId(group)}`)
+          .join(', ')}`
+      );
+    }
+
+    if (result.skippedRegular && result.skippedRegular.length > 0) {
+      for (const group of result.skippedRegular) {
+        this.log.debug(
+          `Skipping unknown group 0x${formatUnknownGroupId(
+            group
+          )} because it is supported as regular group`
+        );
+      }
+    }
+
+    if (result.truncated) {
+      this.log.warn(`Ignoring unknown group ids beyond the limit of ${UNKNOWN_GROUP_MAX_COUNT}`);
+    }
+  }
+
+  _startUnknownGroupPolling() {
+    if (!this._isUnknownGroupPollingEnabled()) {
+      this.log.debug('Unknown group diagnosis polling disabled');
+      return;
+    }
+
+    const groups = this._getUnknownGroupPollingGroups();
+    if (groups.length === 0) {
+      this.log.debug('Unknown group diagnosis polling enabled without valid groups');
+      return;
+    }
+
+    const intervalSeconds = normalizeUnknownGroupPollingInterval(
+      this.config && this.config.unknownGroupPollingInterval,
+      60
+    );
+    const intervalMs = intervalSeconds * 1000;
+    const formattedGroups = groups.map((group) => `0x${formatUnknownGroupId(group)}`).join(', ');
+
+    this.log.debug(
+      `Scheduling unknown group diagnosis polling for ${formattedGroups} every ${intervalSeconds}s`
+    );
+
+    const handler = () => this._pollUnknownGroupsSequentially(groups);
+    const timer = setInterval(handler, intervalMs);
+    this.pollTimers.set('unknownGroups', timer);
+    handler();
   }
 
   _clearPolling() {
@@ -557,6 +653,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       clearInterval(timer);
     }
     this.pollTimers.clear();
+    this._unknownGroupPollingInProgress = false;
   }
 
   _shouldRestartOnError() {
@@ -621,34 +718,34 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       case 'getPowerUsage':
         this._pollPowerUsage();
         break;
+      case 'getGroup5Data':
+        this._pollGroup5Data();
+        break;
+      case 'getGroup41Data':
+        this._pollGroup41Data();
+        break;
       default:
         this.log.debug(`No polling handler registered for ${methodId}`);
     }
   }
 
   _buildPollingConfig() {
-    const defaultInterval = Number(this.config.pollingInterval) || 60;
-    const entries = this._getPollingEntries();
-    const map = new Map();
-    for (const entry of entries) {
-      if (!entry || !entry.id) {
-        continue;
-      }
-      map.set(entry.id, {
-        enabled: entry.enabled !== false,
-        interval: Number(entry.interval) || defaultInterval,
-      });
-    }
+    return normalizePollingRequests(this.config || {});
+  }
 
-    return POLLING_METHODS.map((method) => {
-      const entry = map.get(method.id);
-      const fallbackInterval = method.id === 'getStatus' ? defaultInterval : method.defaultInterval;
-      return {
-        id: method.id,
-        enabled: entry ? entry.enabled : method.id === 'getStatus',
-        interval: entry ? entry.interval : fallbackInterval,
-      };
-    });
+  _describeRawPollingConfig() {
+    if (Array.isArray(this.config && this.config.pollingRequests)) {
+      return `native.pollingRequests (${describePollingEntries(this.config.pollingRequests)})`;
+    }
+    if (
+      this.config &&
+      this.config.polling &&
+      typeof this.config.polling === 'object' &&
+      Array.isArray(this.config.polling.requests)
+    ) {
+      return `native.polling.requests (${describePollingEntries(this.config.polling.requests)})`;
+    }
+    return 'none';
   }
 
   _normalizeConfig() {
@@ -808,17 +905,28 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
-    const pollingIsObject = this.config.polling && typeof this.config.polling === 'object';
-    const existingRequests =
-      pollingIsObject && Array.isArray(this.config.polling.requests)
-        ? this.config.polling.requests
-        : null;
+    const normalizedUnknownGroupPollingInterval = normalizeUnknownGroupPollingInterval(
+      this.config.unknownGroupPollingInterval,
+      60
+    );
+    if (normalizedUnknownGroupPollingInterval !== this.config.unknownGroupPollingInterval) {
+      this.config.unknownGroupPollingInterval = normalizedUnknownGroupPollingInterval;
+      changed = true;
+    }
 
-    if (!existingRequests && Array.isArray(this.config.pollingRequests)) {
-      this.config.polling = {
-        ...(pollingIsObject ? this.config.polling : {}),
-        requests: this.config.pollingRequests,
-      };
+    const parsedUnknownGroups = parseUnknownGroupIds(this.config.unknownGroupIds);
+    this._logUnknownGroupParsingIssues(parsedUnknownGroups);
+    const normalizedUnknownGroupIds = parsedUnknownGroups.groups
+      .map((group) => formatUnknownGroupId(group))
+      .join(',');
+    if ((this.config.unknownGroupIds || '') !== normalizedUnknownGroupIds) {
+      this.config.unknownGroupIds = normalizedUnknownGroupIds;
+      changed = true;
+    }
+
+    const normalizedPollingRequests = normalizePollingRequests(this.config);
+    if (!isDeepStrictEqual(this.config.pollingRequests, normalizedPollingRequests)) {
+      this.config.pollingRequests = normalizedPollingRequests;
       changed = true;
     }
 
@@ -831,29 +939,48 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
-    if (
-      this.config.polling &&
-      Array.isArray(this.config.polling.requests) &&
-      !Array.isArray(this.config.pollingRequests)
-    ) {
-      this.config.pollingRequests = this.config.polling.requests.map((entry) => ({
-        id: entry.id,
-        enabled: entry.enabled !== false,
-        interval: Number(entry.interval) || Number(this.config.pollingInterval) || 60,
-      }));
+    if (typeof this.config.customPolling !== 'boolean') {
+      this.config.customPolling = false;
       changed = true;
     }
 
-    if (typeof this.config.exposeRawStatus !== 'boolean') {
-      const rawValue = this.config.exposeRawStatus;
-      const normalizedExposeRawStatus = normalizeBooleanValue(rawValue);
-      if (normalizedExposeRawStatus !== rawValue || rawValue === undefined) {
-        this.config.exposeRawStatus = normalizedExposeRawStatus;
+    if (
+      this.config.polling &&
+      typeof this.config.polling === 'object' &&
+      Object.prototype.hasOwnProperty.call(this.config.polling, 'requests')
+    ) {
+      delete this.config.polling.requests;
+      if (Object.keys(this.config.polling).length === 0) {
+        delete this.config.polling;
+      }
+      changed = true;
+    }
+
+    for (const key of ['exposeRawBytes', 'exposeAnalogCandidates']) {
+      if (Object.prototype.hasOwnProperty.call(this.config, key)) {
+        delete this.config[key];
         changed = true;
       }
     }
 
-    for (const key of ['modeAsNumber', 'fanSpeedAsNumber', 'swingModeAsNumber', 'restartOnError']) {
+    for (const key of ['exposeRawStatus']) {
+      if (typeof this.config[key] !== 'boolean') {
+        const rawValue = this.config[key];
+        const normalized = normalizeBooleanValue(rawValue);
+        if (normalized !== rawValue || rawValue === undefined) {
+          this.config[key] = normalized;
+          changed = true;
+        }
+      }
+    }
+
+    for (const key of [
+      'modeAsNumber',
+      'fanSpeedAsNumber',
+      'swingModeAsNumber',
+      'restartOnError',
+      'enableUnknownGroupPolling',
+    ]) {
       if (typeof this.config[key] !== 'boolean') {
         const normalized = normalizeBooleanValue(this.config[key]);
         if (normalized !== this.config[key]) {
@@ -981,11 +1108,96 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       return;
     }
 
+    this.log.debug('Polling power usage now');
+
     try {
       await this.bridge.getPowerUsage();
     } catch (error) {
       this.log.warn(`Polling power usage failed: ${error.message}`);
     }
+  }
+
+  async _pollGroup5Data() {
+    if (!this.bridge || !this.bridge.connected) {
+      return;
+    }
+
+    this.log.debug('Polling group 5 data now');
+
+    try {
+      await this.bridge.getGroup5Data();
+    } catch (error) {
+      this.log.warn(`Polling group 5 data failed: ${error.message}`);
+    }
+  }
+
+  async _pollGroup41Data() {
+    if (!this.bridge || !this.bridge.connected) {
+      return;
+    }
+
+    this.log.debug('Polling group 41 data now');
+
+    try {
+      await this.bridge.getGroup41Data();
+    } catch (error) {
+      this.log.warn(`Polling group 41 diagnostic data failed: ${error.message}`);
+    }
+  }
+
+  async _pollUnknownGroupsSequentially(groups) {
+    if (!this.bridge || !this.bridge.connected || !Array.isArray(groups) || groups.length === 0) {
+      return;
+    }
+
+    if (this._unknownGroupPollingInProgress) {
+      this.log.debug(
+        'Skipping unknown group diagnosis cycle because the previous cycle is still running'
+      );
+      return;
+    }
+
+    this._unknownGroupPollingInProgress = true;
+
+    try {
+      // Safe diagnosis mode: every request below is a 20-byte C1 query only
+      // (41 21 01 <group> 00 ... 00). No control/set/B0 frames are sent here.
+      for (const groupByte of groups) {
+        if (!this.bridge || !this.bridge.connected) {
+          return;
+        }
+
+        const formattedGroup = `0x${formatUnknownGroupId(groupByte)}`;
+        this.log.debug(`Polling unknown group ${formattedGroup} now`);
+
+        try {
+          const response = await this.bridge.getUnknownGroupData(groupByte);
+          if (response) {
+            this.log.debug(
+              `Unknown group ${formattedGroup} response received: responseId=0x${formatUnknownGroupId(
+                response.responseId
+              )}, groupByte=0x${formatUnknownGroupId(response.groupByte)}, payloadHex=${
+                response.payloadHex || ''
+              }`
+            );
+          } else {
+            this.log.debug(`Unknown group ${formattedGroup} returned no response data`);
+          }
+        } catch (error) {
+          this.log.debug(
+            `Unknown group ${formattedGroup} polling failed: ${this._formatError(error)}`
+          );
+        }
+
+        await this._delay(250);
+      }
+    } finally {
+      this._unknownGroupPollingInProgress = false;
+    }
+  }
+
+  _delay(ms) {
+    return new Promise((resolve) => this.setTimeout(resolve, ms));
   }
 
   _extractStatusEntries(status) {
@@ -1007,17 +1219,82 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
   }
 
-  async _applyStatusUpdate(status, rawStatus) {
-    const entries = this._extractStatusEntries(status);
-    if (!entries || entries.length === 0) {
+  async _cleanupLegacyGroup41CandidateStates() {
+    const legacyGroup41CandidateStates = [
+      'sensors.compressorFrequencyCandidate',
+      'sensors.hotGasOrCondenserTemperatureCandidate',
+      'sensors.outdoorPipeTemperatureCandidate',
+      'sensors.evaporatorTemperature1Candidate',
+      'sensors.evaporatorTemperature2Candidate',
+      'sensors.outdoorCoilTemperatureCandidate',
+      'sensors.outdoorAmbientTemperatureCandidate',
+    ];
+
+    for (const localId of legacyGroup41CandidateStates) {
+      try {
+        const object = await this.getObjectAsync(localId);
+        if (!object) {
+          continue;
+        }
+
+        await this.delObjectAsync(localId);
+      } catch (error) {
+        this.log.debug(
+          `Failed to delete legacy Group 41 candidate state ${localId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _cleanupRemovedRawAnalysisStates() {
+    let objects;
+    try {
+      objects = await this.getObjectViewAsync('system', 'state', {
+        startkey: `${this.namespace}.statusRaw.`,
+        endkey: `${this.namespace}.statusRaw.\u9999`,
+      });
+    } catch (error) {
+      this.log.debug(`Failed to scan removed raw analysis states: ${this._formatError(error)}`);
       return;
     }
+
+    const rows = objects && Array.isArray(objects.rows) ? objects.rows : [];
+    for (const row of rows) {
+      const fullId = row && row.id;
+      if (typeof fullId !== 'string') {
+        continue;
+      }
+
+      const localId = fullId.startsWith(`${this.namespace}.`)
+        ? fullId.slice(this.namespace.length + 1)
+        : fullId;
+      if (!/^statusRaw\..*(?:rawByte|analogCandidates)/.test(localId)) {
+        continue;
+      }
+
+      try {
+        await this.delObjectAsync(localId);
+        this._knownRawStatusStates.delete(localId.replace(/^statusRaw\./, ''));
+      } catch (error) {
+        this.log.debug(
+          `Failed to delete removed raw analysis state ${localId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _applyStatusUpdate(status, rawStatus) {
+    const entries = this._extractStatusEntries(status);
 
     if (this.config && this.config.exposeRawStatus) {
       const rawEntries = this._extractStatusEntries(rawStatus) || (!rawStatus ? entries : null);
       if (rawEntries && rawEntries.length > 0) {
         await this._applyRawStatus(rawEntries);
       }
+    }
+
+    if (!entries || entries.length === 0) {
+      return;
     }
 
     for (const [datapointId, value] of entries) {
@@ -1094,20 +1371,199 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       return;
     }
 
-    if (!this.datapointById.has('powerUsage')) {
+    if (this.config && this.config.exposeRawStatus) {
+      const rawEntries = this._extractStatusEntries(usage);
+      if (rawEntries && rawEntries.length > 0) {
+        await this._applyRawStatus(rawEntries);
+      }
+    }
+
+    const mapped = {
+      powerUsage: usage.powerUsage,
+      totalEnergy: usage.totalEnergy,
+    };
+
+    for (const [datapointId, value] of Object.entries(mapped)) {
+      if (!this.datapointById.has(datapointId) || value === undefined) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update power usage state ${datapointId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _applyGroup5Data(group5Data) {
+    if (!group5Data || typeof group5Data !== 'object') {
       return;
     }
 
-    const datapoint = this.datapointById.get('powerUsage');
-    const normalized = this._normalizeReadValue(datapoint, usage.powerUsage);
-    try {
-      await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
-        val: normalized,
-        ack: true,
-      });
-    } catch (error) {
-      this.log.debug(`Failed to update power usage state: ${this._formatError(error)}`);
+    if (this.config && this.config.exposeRawStatus) {
+      const rawEntries = this._extractStatusEntries(group5Data);
+      if (rawEntries && rawEntries.length > 0) {
+        await this._applyRawStatus(rawEntries);
+      }
     }
+
+    const mapped = {
+      indoorHumidity: group5Data.indoorHumidity,
+      outdoorFanSpeed: group5Data.outdoorFanSpeed,
+      defrostActive: group5Data.defrostActive,
+    };
+
+    for (const [datapointId, value] of Object.entries(mapped)) {
+      if (!this.datapointById.has(datapointId) || value === undefined) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update group 5 state ${datapointId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _applyGroup41Data(group41Data) {
+    if (!group41Data || typeof group41Data !== 'object') {
+      return;
+    }
+
+    this.log.debug(
+      `Received group 41 payload: ${group41Data.group41_payloadHex || group41Data.payloadHex || ''}`
+    );
+    this.log.debug(
+      `Decoded group 41 diagnostic data: compressorFrequency=${group41Data.compressorFrequency}, group41Byte08Raw=${group41Data.group41Byte08Raw}, group41Byte08TemperatureCandidate=${group41Data.group41Byte08TemperatureCandidate}, indoorPipeTemperature=${group41Data.indoorPipeTemperature}, indoorHeatExchangerTemperature=${group41Data.indoorHeatExchangerTemperature}, outdoorHeatExchangerTemperatureCandidate=${group41Data.outdoorHeatExchangerTemperatureCandidate}, outdoorTemperatureGroup41=${group41Data.outdoorTemperatureGroup41}`
+    );
+
+    if (this.config && this.config.exposeRawStatus) {
+      const rawEntries = Object.entries({
+        rawFrameHex: group41Data.rawFrameHex || group41Data.group41_rawFrameHex || '',
+        payloadHex: group41Data.payloadHex || group41Data.group41_payloadHex || '',
+        group41_rawFrameHex: group41Data.group41_rawFrameHex || group41Data.rawFrameHex || '',
+        group41_payloadHex: group41Data.group41_payloadHex || group41Data.payloadHex || '',
+      });
+      await this._applyRawStatus(rawEntries);
+    }
+
+    const mapped = {
+      compressorFrequency: group41Data.compressorFrequency,
+      group41Byte08Raw: group41Data.group41Byte08Raw,
+      group41Byte08TemperatureCandidate: group41Data.group41Byte08TemperatureCandidate,
+      indoorPipeTemperature: group41Data.indoorPipeTemperature,
+      indoorHeatExchangerTemperature: group41Data.indoorHeatExchangerTemperature,
+      outdoorHeatExchangerTemperatureCandidate:
+        group41Data.outdoorHeatExchangerTemperatureCandidate,
+      outdoorTemperatureGroup41: group41Data.outdoorTemperatureGroup41,
+    };
+
+    for (const [datapointId, value] of Object.entries(mapped)) {
+      if (!this.datapointById.has(datapointId) || value === undefined) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update group 41 state ${datapointId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _applyUnknownGroupData(groupData) {
+    if (!groupData || typeof groupData !== 'object') {
+      return;
+    }
+
+    const groupByte = Number.isInteger(groupData.groupByte) ? groupData.groupByte : null;
+    if (groupByte === null) {
+      this.log.debug('Ignoring unknown group response without groupByte');
+      return;
+    }
+
+    const groupId = `group${formatUnknownGroupId(groupByte)}`;
+    this.log.debug(
+      `Applying unknown group ${groupId}: responseId=0x${formatUnknownGroupId(
+        groupData.responseId
+      )}, groupByte=0x${formatUnknownGroupId(groupByte)}, payloadHex=${groupData.payloadHex || ''}`
+    );
+
+    const rawEntries = {
+      rawFrameHex: groupData.rawFrameHex || '',
+      payloadHex: groupData.payloadHex || '',
+    };
+
+    for (const [key, value] of Object.entries(rawEntries)) {
+      try {
+        const normalized = this._normalizeRawStatusValue(value);
+        if (!normalized) {
+          continue;
+        }
+
+        await this._ensureUnknownGroupRawState(groupId, key, normalized.type, normalized.role);
+        await this.setStateAsync(`statusRaw.unknownGroups.${groupId}.${key}`, {
+          val: normalized.value,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update unknown group ${groupId}.${key}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _ensureUnknownGroupRawState(groupId, key, type, role) {
+    const stateKey = `${groupId}.${key}`;
+    if (this._knownUnknownGroupRawStates.has(stateKey)) {
+      return;
+    }
+
+    await this.setObjectNotExistsAsync(`statusRaw.unknownGroups.${groupId}`, {
+      type: 'channel',
+      common: {
+        name: `Unknown group ${groupId}`,
+      },
+      native: {},
+    });
+
+    await this.setObjectNotExistsAsync(`statusRaw.unknownGroups.${groupId}.${key}`, {
+      type: 'state',
+      common: {
+        name: key,
+        type,
+        role,
+        read: true,
+        write: false,
+      },
+      native: {},
+    });
+
+    this._knownUnknownGroupRawStates.add(stateKey);
   }
 
   async _ensureRawStatusState(key, type, role) {
@@ -1198,16 +1654,6 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     });
 
     this._knownCapabilityStates.add(key);
-  }
-
-  _getPollingEntries() {
-    if (this.config.polling && Array.isArray(this.config.polling.requests)) {
-      return this.config.polling.requests;
-    }
-    if (Array.isArray(this.config.pollingRequests)) {
-      return this.config.pollingRequests;
-    }
-    return [];
   }
 
   _normalizeWriteValue(datapoint, value) {
@@ -1483,7 +1929,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 }
 
 if (module.parent) {
-  module.exports = (options) => new MideaSerialBridgeAdapter(options);
+  const createAdapter = (options) => new MideaSerialBridgeAdapter(options);
+  createAdapter.MideaSerialBridgeAdapter = MideaSerialBridgeAdapter;
+  module.exports = createAdapter;
 } else {
   new MideaSerialBridgeAdapter();
 }

@@ -165,6 +165,61 @@
           "lg": 4,
           "xl": 3
         },
+        "enableUnknownGroupPolling": {
+          "type": "checkbox",
+          "label": {
+            "en": "Enable unknown group diagnosis polling",
+            "de": "Diagnoseabfrage unbekannter Gruppen aktivieren"
+          },
+          "default": false,
+          "help": {
+            "en": "Experimental diagnosis mode. Only Midea query groups 0x20-0x7F. No control commands. Sends only safe 20-byte C1 query frames (41 21 01 <group> 00 ... 00).",
+            "de": "Experimenteller Diagnosemodus. Nur Midea-Query-Gruppen 0x20-0x7F. Keine Steuerbefehle. Sendet ausschließlich sichere 20-Byte-C1-Query-Frames (41 21 01 <group> 00 ... 00)."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 4,
+          "lg": 4,
+          "xl": 3
+        },
+        "unknownGroupPollingInterval": {
+          "type": "number",
+          "label": {
+            "en": "Unknown group polling interval",
+            "de": "Abfrageintervall unbekannter Gruppen"
+          },
+          "default": 60,
+          "help": {
+            "en": "Interval in seconds for the complete unknown-group cycle. Minimum is 10 seconds.",
+            "de": "Intervall in Sekunden für einen vollständigen Zyklus aller unbekannten Gruppen. Minimum sind 10 Sekunden."
+          },
+          "min": 10,
+          "max": 3600,
+          "unit": "s",
+          "xs": 12,
+          "sm": 6,
+          "md": 4,
+          "lg": 4,
+          "xl": 3
+        },
+        "unknownGroupIds": {
+          "type": "text",
+          "label": {
+            "en": "Unknown group IDs",
+            "de": "Unbekannte Gruppen-IDs"
+          },
+          "default": "",
+          "placeholder": "20,21,30,31,50,51,60,7F",
+          "help": {
+            "en": "Comma-separated hex group bytes from 0x20 to 0x7F. At most 16 values are used sequentially; supported groups 0x41, 0x44, and 0x45 are skipped.",
+            "de": "Kommagetrennte Hex-Gruppenbytes von 0x20 bis 0x7F. Maximal 16 Werte werden nacheinander genutzt; unterstützte Gruppen 0x41, 0x44 und 0x45 werden übersprungen."
+          },
+          "xs": 12,
+          "sm": 12,
+          "md": 8,
+          "lg": 8,
+          "xl": 6
+        },
         "customPolling": {
           "type": "checkbox",
           "label": {
@@ -173,8 +228,8 @@
           },
           "default": false,
           "help": {
-            "en": "Allow overriding the default interval for the commands listed below.",
-            "de": "Ermöglicht es, das Standardintervall für die unten aufgeführten Befehle zu überschreiben."
+            "en": "Legacy compatibility switch only; configured commands below are always used when present.",
+            "de": "Nur noch Kompatibilitätsschalter; die unten konfigurierten Befehle werden immer verwendet, wenn sie vorhanden sind."
           },
           "xs": 12,
           "sm": 6,
@@ -286,6 +341,20 @@
                     "en": "Power usage (0x41/energy)",
                     "de": "Energieverbrauch (0x41/Energie)"
                   }
+                },
+                {
+                  "value": "getGroup5Data",
+                  "label": {
+                    "en": "Group 5 data (0x41/group 5)",
+                    "de": "Group-5-Daten (0x41/Gruppe 5)"
+                  }
+                },
+                {
+                  "value": "getGroup41Data",
+                  "label": {
+                    "en": "Group 41 diagnostic data",
+                    "de": "Group 41 Diagnosedaten"
+                  }
                 }
               ]
             },
@@ -300,6 +369,33 @@
               "min": 5,
               "max": 3600,
               "unit": "s"
+            }
+          ],
+          "default": [
+            {
+              "id": "getStatus",
+              "enabled": true,
+              "interval": 60
+            },
+            {
+              "id": "getCapabilities",
+              "enabled": false,
+              "interval": 3600
+            },
+            {
+              "id": "getPowerUsage",
+              "enabled": false,
+              "interval": 300
+            },
+            {
+              "id": "getGroup5Data",
+              "enabled": false,
+              "interval": 300
+            },
+            {
+              "id": "getGroup41Data",
+              "enabled": false,
+              "interval": 300
             }
           ]
         }
