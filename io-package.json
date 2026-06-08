@@ -93,6 +93,8 @@
     "restartInterval": 300,
     "beep": true,
     "exposeRawStatus": false,
+    "exposeRawBytes": false,
+    "exposeAnalogCandidates": false,
     "modeAsNumber": false,
     "fanSpeedAsNumber": false,
     "swingModeAsNumber": false,

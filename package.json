@@ -39,7 +39,8 @@
   "scripts": {
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,md}\"",
-    "test": "npm run lint"
+    "test": "npm run test:raw-parser-helper && npm run lint",
+    "test:raw-parser-helper": "node test/raw-parser-helper.test.js"
   },
   "files": [
     "admin/",
