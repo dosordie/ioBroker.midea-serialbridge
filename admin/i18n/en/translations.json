@@ -37,5 +37,6 @@
   "getStatus": "Status (0x41)",
   "getCapabilities": "Capabilities (0xB5)",
   "getPowerUsage": "Power usage (0x41/energy)",
-  "getGroup5Data": "Group 5 data (0x41/group 5)"
+  "getGroup5Data": "Group 5 data (0x41/group 5)",
+  "getGroup41Data": "Group 41 diagnostic data"
 }

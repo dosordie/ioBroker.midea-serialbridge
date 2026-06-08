@@ -382,6 +382,13 @@
                     "en": "Group 5 data (0x41/group 5)",
                     "de": "Group-5-Daten (0x41/Gruppe 5)"
                   }
+                },
+                {
+                  "value": "getGroup41Data",
+                  "label": {
+                    "en": "Group 41 diagnostic data",
+                    "de": "Group 41 Diagnosedaten"
+                  }
                 }
               ]
             },
@@ -416,6 +423,11 @@
             },
             {
               "id": "getGroup5Data",
+              "enabled": false,
+              "interval": 300
+            },
+            {
+              "id": "getGroup41Data",
               "enabled": false,
               "interval": 300
             }
