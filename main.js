@@ -1109,19 +1109,28 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       }
     }
 
-    if (!this.datapointById.has('powerUsage')) {
-      return;
-    }
+    const mapped = {
+      powerUsage: usage.powerUsage,
+      totalEnergy: usage.totalEnergy,
+    };
 
-    const datapoint = this.datapointById.get('powerUsage');
-    const normalized = this._normalizeReadValue(datapoint, usage.powerUsage);
-    try {
-      await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
-        val: normalized,
-        ack: true,
-      });
-    } catch (error) {
-      this.log.debug(`Failed to update power usage state: ${this._formatError(error)}`);
+    for (const [datapointId, value] of Object.entries(mapped)) {
+      if (!this.datapointById.has(datapointId) || value === undefined) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update power usage state ${datapointId}: ${this._formatError(error)}`
+        );
+      }
     }
   }
 

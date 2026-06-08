@@ -157,6 +157,7 @@ The following methods are provided:
 | Property | Type | Description |
 | --- | --- | --- |
 | powerUsage | number | Power usage in kWh |
+| totalEnergy | number | Internal total energy counter in kWh |
 
 * `getStatus(retry)`, this method requests the current status of the unit (0x41 command). The promise resolves to a JSON object containing the property values when successful. The following properties are reported:
 
