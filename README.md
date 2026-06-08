@@ -35,33 +35,33 @@ Configure **Unknown group IDs** as comma-separated hexadecimal group bytes from 
 
 Responses are written only below `statusRaw.unknownGroups.groupXX.*` for analysis and never create normal sensor datapoints. Each response includes only compact metadata: `rawFrameHex`, `payloadHex`, `responseId` and `groupByte`. Group byte `0x41` is now supported as `getGroup41Data`; if it is still configured here, the adapter skips it with a debug note instead of creating duplicate unknown-group states. Compare `payloadHex` while changing real-world conditions to identify frame-level differences.
 
-### C1 Group 41 diagnostic candidate values
+### C1 Group 41 diagnostic data
 
-The regular polling configuration now includes `getGroup41Data`, a read-only 20-byte C1 query (`41 21 01 41 00 ... 00`) for experimentally decoded Group 41 diagnostic data. The decoded values are exposed as normal `sensors.*` datapoints, but their state names and descriptions deliberately contain `Kandidat` because the exact Midea protocol meaning can differ between devices and is not finally verified.
+The regular polling configuration includes `getGroup41Data`, a read-only 20-byte C1 query (`41 21 01 41 00 ... 00`) for Group 41 diagnostic data. The decoded values are exposed as normal `sensors.*` datapoints. Some Group 41 values are still experimental and can differ between Midea devices, so uncertain values keep `Candidate` / `Kandidat` in their state IDs, names and descriptions.
 
-Group 41 currently decodes the direct byte 04 value as `sensors.compressorFrequencyCandidate` and applies the Midea temperature formula `(byte - 50) / 2` to bytes 08, 10, 11, 12 and 13 for the temperature candidates. When raw status output is enabled, compact Group 41 raw values are available as `statusRaw.group41_rawFrameHex` and `statusRaw.group41_payloadHex`.
+Group 41 currently exposes the confirmed compressor frequency, indoor pipe temperature, indoor heat exchanger temperature and Group 41 outdoor temperature. It also exposes two still-experimental candidate values for outdoor-unit / condenser / pipe temperatures. Byte 10 and byte 11 use the `raw - 50` scaling found in newer logs; byte 08, byte 12 and byte 13 continue to use `(byte - 50) / 2`. When raw status output is enabled, compact Group 41 raw values remain available as `statusRaw.group41_rawFrameHex` and `statusRaw.group41_payloadHex`.
 
 The following datapoints are available out of the box:
 
-| State ID                                | Description                                                                                 | Read | Write |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- | ---- | ----- |
-| `power`                                 | Turn the unit on or off                                                                     | ✓    | ✓     |
-| `mode`                                  | Operation mode (auto, cool, heat, dry, fan)                                                 | ✓    | ✓     |
-| `targetTemperature`                     | Desired room temperature                                                                    | ✓    | ✓     |
-| `indoorTemperature`                     | Current indoor temperature                                                                  | ✓    | ✗     |
-| `outdoorTemperature`                    | Current outdoor temperature                                                                 | ✓    | ✗     |
-| `totalEnergy`                           | Internal total energy counter from C1 group 4 (kWh)                                         | ✓    | ✗     |
-| `compressorFrequencyCandidate`          | Candidate compressor frequency / inverter load stage from C1 Group 41 byte 04 (Hz)          | ✓    | ✗     |
-| `hotGasOrCondenserTemperatureCandidate` | Candidate hot-gas, condenser or outdoor-unit pipe temperature from C1 Group 41 byte 08 (°C) | ✓    | ✗     |
-| `evaporatorTemperature1Candidate`       | Candidate evaporator or pipe temperature 1 from C1 Group 41 byte 10 (°C)                    | ✓    | ✗     |
-| `evaporatorTemperature2Candidate`       | Candidate evaporator or pipe temperature 2 from C1 Group 41 byte 11 (°C)                    | ✓    | ✗     |
-| `outdoorCoilTemperatureCandidate`       | Candidate outdoor-unit, condenser or pipe temperature from C1 Group 41 byte 12 (°C)         | ✓    | ✗     |
-| `outdoorAmbientTemperatureCandidate`    | Candidate outdoor temperature / outdoor sensor from C1 Group 41 byte 13 (°C)                | ✓    | ✗     |
-| `fanSpeed`                              | Fan speed (auto, low, medium, high)                                                         | ✓    | ✓     |
-| `swingMode`                             | Swing mode (off, vertical, horizontal, both)                                                | ✓    | ✓     |
-| `ecoMode`                               | Eco mode                                                                                    | ✓    | ✓     |
-| `turboMode`                             | Turbo / powerful mode                                                                       | ✓    | ✓     |
-| `sleepMode`                             | Sleep mode                                                                                  | ✓    | ✓     |
+| State ID                          | Description                                                                                   | Read | Write |
+| --------------------------------- | --------------------------------------------------------------------------------------------- | ---- | ----- |
+| `power`                           | Turn the unit on or off                                                                       | ✓    | ✓     |
+| `mode`                            | Operation mode (auto, cool, heat, dry, fan)                                                   | ✓    | ✓     |
+| `targetTemperature`               | Desired room temperature                                                                      | ✓    | ✓     |
+| `indoorTemperature`               | Current indoor temperature                                                                    | ✓    | ✗     |
+| `outdoorTemperature`              | Current outdoor temperature                                                                   | ✓    | ✗     |
+| `totalEnergy`                     | Internal total energy counter from C1 group 4 (kWh)                                           | ✓    | ✗     |
+| `compressorFrequency`             | Compressor frequency from C1 Group 41 byte 04 (Hz)                                            | ✓    | ✗     |
+| `outdoorPipeTemperatureCandidate` | Candidate outdoor-unit, condenser or pipe temperature from C1 Group 41 byte 08 (°C)           | ✓    | ✗     |
+| `indoorPipeTemperature`           | Indoor pipe / air temperature from C1 Group 41 byte 10 (°C)                                   | ✓    | ✗     |
+| `indoorHeatExchangerTemperature`  | Indoor heat exchanger / pipe temperature from C1 Group 41 byte 11 (°C)                        | ✓    | ✗     |
+| `outdoorCoilTemperatureCandidate` | Candidate outdoor-unit, condenser or heat exchanger temperature from C1 Group 41 byte 12 (°C) | ✓    | ✗     |
+| `outdoorTemperatureGroup41`       | Outdoor temperature from C1 Group 41 byte 13 (°C)                                             | ✓    | ✗     |
+| `fanSpeed`                        | Fan speed (auto, low, medium, high)                                                           | ✓    | ✓     |
+| `swingMode`                       | Swing mode (off, vertical, horizontal, both)                                                  | ✓    | ✓     |
+| `ecoMode`                         | Eco mode                                                                                      | ✓    | ✓     |
+| `turboMode`                       | Turbo / powerful mode                                                                         | ✓    | ✓     |
+| `sleepMode`                       | Sleep mode                                                                                    | ✓    | ✓     |
 
 Whenever you change a writable state in ioBroker the adapter forwards the command to the bridge immediately.
 
