@@ -165,40 +165,6 @@
           "lg": 4,
           "xl": 3
         },
-        "exposeRawBytes": {
-          "type": "checkbox",
-          "label": {
-            "en": "Expose raw payload bytes",
-            "de": "Rohbytes des Payloads bereitstellen"
-          },
-          "default": false,
-          "help": {
-            "en": "When raw status is exposed, additionally create statusRaw.rawByteXX, payload/frame hex and bit strings for protocol analysis only.",
-            "de": "Erstellt bei aktivem Rohstatus zusätzlich statusRaw.rawByteXX, Payload-/Frame-Hex und Bitstrings nur zur Protokollanalyse."
-          },
-          "xs": 12,
-          "sm": 6,
-          "md": 4,
-          "lg": 4,
-          "xl": 3
-        },
-        "exposeAnalogCandidates": {
-          "type": "checkbox",
-          "label": {
-            "en": "Expose analog candidates",
-            "de": "Analogwert-Kandidaten bereitstellen"
-          },
-          "default": false,
-          "help": {
-            "en": "When raw status is exposed, add analysis-only u8/s8/u16/s16/BCD interpretations of payload bytes.",
-            "de": "Ergänzt bei aktivem Rohstatus reine Analysewerte mit u8/s8/u16/s16/BCD-Interpretationen der Payload-Bytes."
-          },
-          "xs": 12,
-          "sm": 6,
-          "md": 4,
-          "lg": 4,
-          "xl": 3
-        },
         "enableUnknownGroupPolling": {
           "type": "checkbox",
           "label": {

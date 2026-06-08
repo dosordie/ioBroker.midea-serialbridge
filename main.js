@@ -140,6 +140,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       }
 
       await this._ensureObjects();
+      await this._cleanupRemovedRawAnalysisStates();
       this.subscribeStates('*');
 
       this.bridge = new MideaSerialBridge({
@@ -149,10 +150,6 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         log: this.log,
         beepOnCommand: this.config.beep !== false,
         valueRepresentation: this.valueRepresentation,
-        exposeRawBytes: !!(this.config.exposeRawStatus && this.config.exposeRawBytes),
-        exposeAnalogCandidates: !!(
-          this.config.exposeRawStatus && this.config.exposeAnalogCandidates
-        ),
       });
 
       this.bridge.on('connected', () => {
@@ -948,7 +945,14 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
-    for (const key of ['exposeRawStatus', 'exposeRawBytes', 'exposeAnalogCandidates']) {
+    for (const key of ['exposeRawBytes', 'exposeAnalogCandidates']) {
+      if (Object.prototype.hasOwnProperty.call(this.config, key)) {
+        delete this.config[key];
+        changed = true;
+      }
+    }
+
+    for (const key of ['exposeRawStatus']) {
       if (typeof this.config[key] !== 'boolean') {
         const rawValue = this.config[key];
         const normalized = normalizeBooleanValue(rawValue);
@@ -1211,6 +1215,43 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
   }
 
+  async _cleanupRemovedRawAnalysisStates() {
+    let objects;
+    try {
+      objects = await this.getObjectViewAsync('system', 'state', {
+        startkey: `${this.namespace}.statusRaw.`,
+        endkey: `${this.namespace}.statusRaw.\u9999`,
+      });
+    } catch (error) {
+      this.log.debug(`Failed to scan removed raw analysis states: ${this._formatError(error)}`);
+      return;
+    }
+
+    const rows = objects && Array.isArray(objects.rows) ? objects.rows : [];
+    for (const row of rows) {
+      const fullId = row && row.id;
+      if (typeof fullId !== 'string') {
+        continue;
+      }
+
+      const localId = fullId.startsWith(`${this.namespace}.`)
+        ? fullId.slice(this.namespace.length + 1)
+        : fullId;
+      if (!/^statusRaw\..*(?:rawByte|analogCandidates)/.test(localId)) {
+        continue;
+      }
+
+      try {
+        await this.delObjectAsync(localId);
+        this._knownRawStatusStates.delete(localId.replace(/^statusRaw\./, ''));
+      } catch (error) {
+        this.log.debug(
+          `Failed to delete removed raw analysis state ${localId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
   async _applyStatusUpdate(status, rawStatus) {
     const entries = this._extractStatusEntries(status);
 
@@ -1434,8 +1475,6 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       payloadHex: groupData.payloadHex || '',
       responseId: groupData.responseId,
       groupByte,
-      rawBytes: groupData.rawBytes || {},
-      analogCandidates: groupData.analogCandidates || {},
     };
 
     for (const [key, value] of Object.entries(rawEntries)) {
