@@ -2,6 +2,7 @@
 
 ## **WORK IN PROGRESS**
 
+- refine C1 Group 41 diagnostic sensor names, byte mappings and temperature scaling from new logs
 - expose Group 41 raw frame/payload hex values and update compact raw hex output with Group 41 frames
 - expand safe unknown-group diagnosis polling to optional group bytes 0x30-0x5F with up to 16 sequential groups
 

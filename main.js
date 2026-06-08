@@ -141,6 +141,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
 
       await this._ensureObjects();
       await this._cleanupRemovedRawAnalysisStates();
+      await this._cleanupLegacyGroup41CandidateStates();
       this.subscribeStates('*');
 
       this.bridge = new MideaSerialBridge({
@@ -1215,6 +1216,31 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
   }
 
+  async _cleanupLegacyGroup41CandidateStates() {
+    const legacyGroup41CandidateStates = [
+      'sensors.compressorFrequencyCandidate',
+      'sensors.hotGasOrCondenserTemperatureCandidate',
+      'sensors.evaporatorTemperature1Candidate',
+      'sensors.evaporatorTemperature2Candidate',
+      'sensors.outdoorAmbientTemperatureCandidate',
+    ];
+
+    for (const localId of legacyGroup41CandidateStates) {
+      try {
+        const object = await this.getObjectAsync(localId);
+        if (!object) {
+          continue;
+        }
+
+        await this.delObjectAsync(localId);
+      } catch (error) {
+        this.log.debug(
+          `Failed to delete legacy Group 41 candidate state ${localId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
   async _cleanupRemovedRawAnalysisStates() {
     let objects;
     try {
@@ -1419,7 +1445,7 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       `Received group 41 payload: ${group41Data.group41_payloadHex || group41Data.payloadHex || ''}`
     );
     this.log.debug(
-      `Decoded group 41 diagnostic data: compressorFrequencyCandidate=${group41Data.compressorFrequencyCandidate}, hotGasOrCondenserTemperatureCandidate=${group41Data.hotGasOrCondenserTemperatureCandidate}, evaporatorTemperature1Candidate=${group41Data.evaporatorTemperature1Candidate}, evaporatorTemperature2Candidate=${group41Data.evaporatorTemperature2Candidate}, outdoorCoilTemperatureCandidate=${group41Data.outdoorCoilTemperatureCandidate}, outdoorAmbientTemperatureCandidate=${group41Data.outdoorAmbientTemperatureCandidate}`
+      `Decoded group 41 diagnostic data: compressorFrequency=${group41Data.compressorFrequency}, outdoorPipeTemperatureCandidate=${group41Data.outdoorPipeTemperatureCandidate}, indoorPipeTemperature=${group41Data.indoorPipeTemperature}, indoorHeatExchangerTemperature=${group41Data.indoorHeatExchangerTemperature}, outdoorCoilTemperatureCandidate=${group41Data.outdoorCoilTemperatureCandidate}, outdoorTemperatureGroup41=${group41Data.outdoorTemperatureGroup41}`
     );
 
     if (this.config && this.config.exposeRawStatus) {
@@ -1433,12 +1459,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
 
     const mapped = {
-      compressorFrequencyCandidate: group41Data.compressorFrequencyCandidate,
-      hotGasOrCondenserTemperatureCandidate: group41Data.hotGasOrCondenserTemperatureCandidate,
-      evaporatorTemperature1Candidate: group41Data.evaporatorTemperature1Candidate,
-      evaporatorTemperature2Candidate: group41Data.evaporatorTemperature2Candidate,
+      compressorFrequency: group41Data.compressorFrequency,
+      outdoorPipeTemperatureCandidate: group41Data.outdoorPipeTemperatureCandidate,
+      indoorPipeTemperature: group41Data.indoorPipeTemperature,
+      indoorHeatExchangerTemperature: group41Data.indoorHeatExchangerTemperature,
       outdoorCoilTemperatureCandidate: group41Data.outdoorCoilTemperatureCandidate,
-      outdoorAmbientTemperatureCandidate: group41Data.outdoorAmbientTemperatureCandidate,
+      outdoorTemperatureGroup41: group41Data.outdoorTemperatureGroup41,
     };
 
     for (const [datapointId, value] of Object.entries(mapped)) {

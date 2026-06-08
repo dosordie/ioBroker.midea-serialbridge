@@ -57,27 +57,35 @@ assert.strictEqual(parser(shortGroup5).humidity, 44);
 assert.strictEqual(parser(shortGroup5).indoorHumidity, 44);
 assert.strictEqual(parser(shortGroup5).group, 5);
 
-const group41Off = parser(Buffer.from('c12101410000000094004440676d000000000000', 'hex'));
-assert.strictEqual(group41Off.compressorFrequencyCandidate, 0);
-assert.strictEqual(group41Off.hotGasOrCondenserTemperatureCandidate, 49.0);
-assert.strictEqual(group41Off.evaporatorTemperature1Candidate, 9.0);
-assert.strictEqual(group41Off.evaporatorTemperature2Candidate, 7.0);
-assert.strictEqual(group41Off.outdoorCoilTemperatureCandidate, 26.5);
-assert.strictEqual(group41Off.outdoorAmbientTemperatureCandidate, 29.5);
-assert.strictEqual(group41Off.group41_payloadHex, 'c12101410000000094004440676d000000000000');
-assert.strictEqual(group41Off.rawBytes, undefined);
-assert.strictEqual(group41Off.analogCandidates, undefined);
+const group41FanOnly = parser(Buffer.from('c12101410000000094054949656b000000000000', 'hex'));
+assert.strictEqual(group41FanOnly.compressorFrequency, 0);
+assert.strictEqual(group41FanOnly.outdoorPipeTemperatureCandidate, 49.0);
+assert.strictEqual(group41FanOnly.indoorPipeTemperature, 23);
+assert.strictEqual(group41FanOnly.indoorHeatExchangerTemperature, 23);
+assert.strictEqual(group41FanOnly.outdoorCoilTemperatureCandidate, 25.5);
+assert.strictEqual(group41FanOnly.outdoorTemperatureGroup41, 28.5);
+assert.strictEqual(group41FanOnly.group41_payloadHex, 'c12101410000000094054949656b000000000000');
+assert.strictEqual(group41FanOnly.rawBytes, undefined);
+assert.strictEqual(group41FanOnly.analogCandidates, undefined);
 
-const group41Running = parser(Buffer.from('c1210141002100009940443f6f6c000000000000', 'hex'));
-assert.strictEqual(group41Running.compressorFrequencyCandidate, 33);
-assert.strictEqual(group41Running.hotGasOrCondenserTemperatureCandidate, 50.5);
-assert.strictEqual(group41Running.evaporatorTemperature1Candidate, 9.0);
-assert.strictEqual(group41Running.evaporatorTemperature2Candidate, 6.5);
-assert.strictEqual(group41Running.outdoorCoilTemperatureCandidate, 30.5);
-assert.strictEqual(group41Running.outdoorAmbientTemperatureCandidate, 29.0);
+const group41Cooling = parser(Buffer.from('c1210141390000009d004641716d000000000000', 'hex'));
+assert.strictEqual(group41Cooling.compressorFrequency, 57);
+assert.strictEqual(group41Cooling.outdoorPipeTemperatureCandidate, 53.5);
+assert.strictEqual(group41Cooling.indoorPipeTemperature, 20);
+assert.strictEqual(group41Cooling.indoorHeatExchangerTemperature, 15);
+assert.strictEqual(group41Cooling.outdoorCoilTemperatureCandidate, 31.5);
+assert.strictEqual(group41Cooling.outdoorTemperatureGroup41, 29.5);
+
+const group41Heating = parser(Buffer.from('c12101411b0000009d005a66706b000000000000', 'hex'));
+assert.strictEqual(group41Heating.compressorFrequency, 27);
+assert.strictEqual(group41Heating.outdoorPipeTemperatureCandidate, 53.5);
+assert.strictEqual(group41Heating.indoorPipeTemperature, 40);
+assert.strictEqual(group41Heating.indoorHeatExchangerTemperature, 52);
+assert.strictEqual(group41Heating.outdoorCoilTemperatureCandidate, 31);
+assert.strictEqual(group41Heating.outdoorTemperatureGroup41, 28.5);
 
 const shortGroup41 = parser(Buffer.from([0xc1, 0x21, 0x01, 0x41, 0x21]));
-assert.strictEqual(shortGroup41.compressorFrequencyCandidate, undefined);
+assert.strictEqual(shortGroup41.compressorFrequency, undefined);
 assert.strictEqual(shortGroup41.group, 1);
 
 const debug = parser(group5, { frame: Buffer.from([0xaa, 0xbb]) });
