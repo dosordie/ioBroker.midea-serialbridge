@@ -2,12 +2,17 @@
 
 ## **WORK IN PROGRESS**
 
+## 0.0.11 (2026-06-09)
+
+- add regular `getGroup43Data` polling for C1 Group 43 diagnostics
+- expose C1 Group 43 byte 10 as `outdoorFanCommandCandidate` without rpm semantics
+- add compact Group 43 raw hex states and skip Group 43 in unknown-group polling
+
 ## 0.0.10 (2026-06-09)
 
 - remove the legacy custom-polling switch from the Admin UI and ignore legacy customPolling fields during normalization
 - normalize pollingRequests as the authoritative polling table, including migration from legacy polling.requests, duplicate cleanup, interval validation and missing default entries
 - align German and English polling request labels with C0, B5 and C1 Group naming
-
 
 ## 0.0.9 (2026-06-08)
 

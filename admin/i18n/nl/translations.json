@@ -32,5 +32,6 @@
   "getPowerUsage": "Energy counter (C1 Group 44)",
   "options": "Options",
   "getGroup5Data": "Group 5 data (C1 Group 45)",
-  "getGroup41Data": "Group 41 diagnostic data (C1 Group 41)"
+  "getGroup41Data": "Group 41 diagnostic data (C1 Group 41)",
+  "getGroup43Data": "Group 43 diagnostic data (C1 Group 43)"
 }

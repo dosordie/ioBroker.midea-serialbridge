@@ -32,5 +32,6 @@
   "getCapabilities": "Fähigkeiten (B5)",
   "getPowerUsage": "Energiezähler (C1 Group 44)",
   "getGroup5Data": "Group-5-Daten (C1 Group 45)",
-  "getGroup41Data": "Group-41-Diagnosedaten (C1 Group 41)"
+  "getGroup41Data": "Group-41-Diagnosedaten (C1 Group 41)",
+  "getGroup43Data": "Group-43-Diagnosedaten (C1 Group 43)"
 }

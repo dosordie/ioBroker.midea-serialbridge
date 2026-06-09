@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "midea-serialbridge",
-    "version": "0.0.10",
+    "version": "0.0.11",
     "titleLang": {
       "en": "Midea Serial Bridge",
       "de": "Midea Serial Bridge",
@@ -42,26 +42,23 @@
       "config": "json"
     },
     "readme": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/README.md",
-    "keywords": [
-      "midea",
-      "hvac",
-      "serial",
-      "climate"
-    ],
+    "keywords": ["midea", "hvac", "serial", "climate"],
     "dependencies": [
       {
         "js-controller": ">=5.0.19"
       }
     ],
-    "authors": [
-      "dosordie <info@dosordie.de>"
-    ],
+    "authors": ["dosordie <info@dosordie.de>"],
     "licenseInformation": {
       "license": "MIT",
       "url": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/LICENSE",
       "type": "open-source"
     },
     "news": {
+      "0.0.11": {
+        "en": "Add regular C1 Group 43 diagnostic polling and expose the outdoor fan command candidate value.",
+        "de": "Ergänzt reguläres C1-Group-43-Diagnose-Polling und gibt den Außenlüfter-Ansteuerungs-Kandidaten aus."
+      },
       "0.0.10": {
         "en": "Clean up polling configuration, remove the legacy custom-polling switch from the admin UI, and normalize polling request defaults.",
         "de": "Bereinigt die Polling-Konfiguration, entfernt den Legacy-Schalter für individuelles Polling aus der Admin-Oberfläche und normalisiert die Polling-Defaults."
@@ -153,6 +150,11 @@
       },
       {
         "id": "getGroup41Data",
+        "enabled": false,
+        "interval": 60
+      },
+      {
+        "id": "getGroup43Data",
         "enabled": false,
         "interval": 60
       }

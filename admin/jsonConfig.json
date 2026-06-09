@@ -338,6 +338,13 @@
                     "en": "Group 41 diagnostic data (C1 Group 41)",
                     "de": "Group-41-Diagnosedaten (C1 Group 41)"
                   }
+                },
+                {
+                  "value": "getGroup43Data",
+                  "label": {
+                    "en": "Group 43 diagnostic data (C1 Group 43)",
+                    "de": "Group-43-Diagnosedaten (C1 Group 43)"
+                  }
                 }
               ]
             },
@@ -377,6 +384,11 @@
             },
             {
               "id": "getGroup41Data",
+              "enabled": false,
+              "interval": 60
+            },
+            {
+              "id": "getGroup43Data",
               "enabled": false,
               "interval": 60
             }

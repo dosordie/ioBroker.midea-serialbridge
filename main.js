@@ -197,6 +197,12 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         });
       });
 
+      this.bridge.on('group43Data', (group43Data) => {
+        this._applyGroup43Data(group43Data).catch((error) => {
+          this.log.debug(`Failed to process group 43 update: ${this._formatError(error)}`);
+        });
+      });
+
       this.bridge.on('unknownGroupData', (groupData) => {
         this._applyUnknownGroupData(groupData).catch((error) => {
           this.log.debug(`Failed to process unknown group update: ${this._formatError(error)}`);
@@ -607,9 +613,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     if (result.skippedRegular && result.skippedRegular.length > 0) {
       for (const group of result.skippedRegular) {
         this.log.debug(
-          `Skipping unknown group 0x${formatUnknownGroupId(
+          `Group 0x${formatUnknownGroupId(
             group
-          )} because it is supported as regular group`
+          )} is supported as regular polling method and skipped in unknown group polling`
         );
       }
     }
@@ -723,6 +729,9 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
         break;
       case 'getGroup41Data':
         this._pollGroup41Data();
+        break;
+      case 'getGroup43Data':
+        this._pollGroup43Data();
         break;
       default:
         this.log.debug(`No polling handler registered for ${methodId}`);
@@ -1144,6 +1153,20 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     }
   }
 
+  async _pollGroup43Data() {
+    if (!this.bridge || !this.bridge.connected) {
+      return;
+    }
+
+    this.log.debug('Polling group 43 data now');
+
+    try {
+      await this.bridge.getGroup43Data();
+    } catch (error) {
+      this.log.warn(`Polling group 43 diagnostic data failed: ${error.message}`);
+    }
+  }
+
   async _pollUnknownGroupsSequentially(groups) {
     if (!this.bridge || !this.bridge.connected || !Array.isArray(groups) || groups.length === 0) {
       return;
@@ -1488,6 +1511,50 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       } catch (error) {
         this.log.debug(
           `Failed to update group 41 state ${datapointId}: ${this._formatError(error)}`
+        );
+      }
+    }
+  }
+
+  async _applyGroup43Data(group43Data) {
+    if (!group43Data || typeof group43Data !== 'object') {
+      return;
+    }
+
+    this.log.debug(
+      `Received group 43 payload: ${group43Data.group43_payloadHex || group43Data.payloadHex || ''}`
+    );
+    this.log.debug(
+      `Decoded group 43 diagnostic data: outdoorFanCommandCandidate=${group43Data.outdoorFanCommandCandidate}`
+    );
+
+    if (this.config && this.config.exposeRawStatus) {
+      const rawEntries = Object.entries({
+        group43_rawFrameHex: group43Data.group43_rawFrameHex || group43Data.rawFrameHex || '',
+        group43_payloadHex: group43Data.group43_payloadHex || group43Data.payloadHex || '',
+      });
+      await this._applyRawStatus(rawEntries);
+    }
+
+    const mapped = {
+      outdoorFanCommandCandidate: group43Data.outdoorFanCommandCandidate,
+    };
+
+    for (const [datapointId, value] of Object.entries(mapped)) {
+      if (!this.datapointById.has(datapointId) || value === undefined) {
+        continue;
+      }
+
+      const datapoint = this.datapointById.get(datapointId);
+      const normalized = this._normalizeReadValue(datapoint, value);
+      try {
+        await this.setStateAsync(`${datapoint.channel}.${datapoint.id}`, {
+          val: normalized,
+          ack: true,
+        });
+      } catch (error) {
+        this.log.debug(
+          `Failed to update group 43 state ${datapointId}: ${this._formatError(error)}`
         );
       }
     }
