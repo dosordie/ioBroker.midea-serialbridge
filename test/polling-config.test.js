@@ -8,10 +8,28 @@ const DEFAULT_REQUESTS = [
   { id: 'getCapabilities', enabled: false, interval: 3600 },
   { id: 'getPowerUsage', enabled: false, interval: 300 },
   { id: 'getGroup5Data', enabled: false, interval: 300 },
-  { id: 'getGroup41Data', enabled: false, interval: 300 },
+  { id: 'getGroup41Data', enabled: false, interval: 60 },
 ];
 
 assert.deepStrictEqual(normalizePollingRequests({}), DEFAULT_REQUESTS);
+
+assert.deepStrictEqual(
+  normalizePollingRequests({
+    customPolling: false,
+    pollingRequests: [{ id: 'getPowerUsage', enabled: true, interval: 300 }],
+  }).find((entry) => entry.id === 'getPowerUsage'),
+  { id: 'getPowerUsage', enabled: true, interval: 300 }
+);
+
+assert.deepStrictEqual(
+  normalizePollingRequests({
+    customPolling: false,
+    polling: {
+      requests: [{ id: 'getStatus', enabled: true, interval: 90 }],
+    },
+  }).find((entry) => entry.id === 'getStatus'),
+  { id: 'getStatus', enabled: true, interval: 90 }
+);
 
 assert.deepStrictEqual(
   normalizePollingRequests({
@@ -27,7 +45,7 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: false, interval: 3600 },
     { id: 'getPowerUsage', enabled: true, interval: 45 },
     { id: 'getGroup5Data', enabled: false, interval: 300 },
-    { id: 'getGroup41Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 60 },
   ]
 );
 
@@ -43,7 +61,7 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: true, interval: 600 },
     { id: 'getPowerUsage', enabled: false, interval: 300 },
     { id: 'getGroup5Data', enabled: false, interval: 300 },
-    { id: 'getGroup41Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 60 },
   ]
 );
 
@@ -69,7 +87,7 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: false, interval: 3600 },
     { id: 'getPowerUsage', enabled: false, interval: 300 },
     { id: 'getGroup5Data', enabled: true, interval: 60 },
-    { id: 'getGroup41Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 60 },
   ]
 );
 

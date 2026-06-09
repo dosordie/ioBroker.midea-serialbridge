@@ -25,7 +25,17 @@ For easier maintenance and to allow local modifications we ship a vendored copy 
 
 ## Configuration
 
-Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge on the **Connection** tab. The **Options** tab allows you to disable the audible confirmation beep, enable exposing raw status values and configure polling behaviour. You can enable or disable polling for each datapoint and configure custom intervals. If no custom interval is specified, the global interval is used. Enable the checkbox **Expose raw status datapoints** to automatically create read-only states for every property reported by the device (e.g. timers, lights or diagnostic flags). The additional states are created beneath the `statusRaw.*` channel and contain the raw values as delivered by the unit. If your bridge occasionally becomes unreachable you can enable **Restart adapter on connection errors** and specify the restart interval to automatically recover from prolonged outages without manual interaction.
+Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge on the **Connection** tab. The **Options** tab allows you to disable the audible confirmation beep, enable exposing raw status values and configure polling behaviour. The legacy switch **Enable custom polling per command** / **Individuelle Abfrage je Befehl aktivieren** is no longer shown and is ignored for compatibility with older configurations. The table of cyclic requests is always authoritative: enable or disable each request there and configure its individual interval. Missing table entries are restored with safe defaults during adapter startup. Enable the checkbox **Expose raw status datapoints** to automatically create read-only states for every property reported by the device (e.g. timers, lights or diagnostic flags). The additional states are created beneath the `statusRaw.*` channel and contain the raw values as delivered by the unit. If your bridge occasionally becomes unreachable you can enable **Restart adapter on connection errors** and specify the restart interval to automatically recover from prolonged outages without manual interaction.
+
+The cyclic request table contains these regular polling requests:
+
+| Request | Protocol response | Default |
+| ------- | ----------------- | ------- |
+| Status request / Statusabfrage | C0 | enabled, 60 s |
+| Capabilities / Fähigkeiten | B5 | disabled, 3600 s |
+| Energy counter / Energiezähler | C1 Group 44 | disabled, 300 s |
+| Group 5 data / Group-5-Daten | C1 Group 45 | disabled, 300 s |
+| Group 41 diagnostic data / Group-41-Diagnosedaten | C1 Group 41 | disabled, 60 s |
 
 ### Unknown C1 group diagnosis mode
 
@@ -88,6 +98,10 @@ Successful commands are acknowledged automatically and the resulting status upda
 - The adapter currently supports a single indoor unit per instance.
 
 ## Changelog
+
+### 0.0.10
+
+- Clean up the Admin polling configuration, remove the legacy custom-polling switch, normalize polling request defaults and align request labels.
 
 ### 0.0.6
 

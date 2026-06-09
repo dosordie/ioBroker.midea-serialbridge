@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "midea-serialbridge",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "titleLang": {
       "en": "Midea Serial Bridge",
       "de": "Midea Serial Bridge",
@@ -42,19 +42,30 @@
       "config": "json"
     },
     "readme": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/README.md",
-    "keywords": ["midea", "hvac", "serial", "climate"],
+    "keywords": [
+      "midea",
+      "hvac",
+      "serial",
+      "climate"
+    ],
     "dependencies": [
       {
         "js-controller": ">=5.0.19"
       }
     ],
-    "authors": ["dosordie <info@dosordie.de>"],
+    "authors": [
+      "dosordie <info@dosordie.de>"
+    ],
     "licenseInformation": {
       "license": "MIT",
       "url": "https://github.com/dosordie/ioBroker.midea-serialbridge/blob/main/LICENSE",
       "type": "open-source"
     },
     "news": {
+      "0.0.10": {
+        "en": "Clean up polling configuration, remove the legacy custom-polling switch from the admin UI, and normalize polling request defaults.",
+        "de": "Bereinigt die Polling-Konfiguration, entfernt den Legacy-Schalter für individuelles Polling aus der Admin-Oberfläche und normalisiert die Polling-Defaults."
+      },
       "0.0.9": {
         "en": "Extend safe unknown-group diagnosis to 0x20-0x7F and neutralize Group 41 byte 08 output.",
         "de": "Erweitert die sichere Unknown-Group-Diagnose auf 0x20-0x7F und gibt Group-41 Byte 08 neutraler aus."
@@ -119,7 +130,6 @@
     "modeAsNumber": false,
     "fanSpeedAsNumber": false,
     "swingModeAsNumber": false,
-    "customPolling": false,
     "pollingRequests": [
       {
         "id": "getStatus",
@@ -144,7 +154,7 @@
       {
         "id": "getGroup41Data",
         "enabled": false,
-        "interval": 300
+        "interval": 60
       }
     ]
   },

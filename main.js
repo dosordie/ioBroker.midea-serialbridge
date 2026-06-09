@@ -784,7 +784,11 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
     moveLegacyValue('1', 'port');
     moveLegacyValue('2', 'pollingInterval');
     moveLegacyValue('3', 'reconnectInterval');
-    moveLegacyValue('4', 'customPolling', (value) => typeof value === 'boolean');
+    // Legacy customPolling switch is no longer used; pollingRequests are always authoritative.
+    if (Object.prototype.hasOwnProperty.call(this.config, '4')) {
+      delete this.config['4'];
+      changed = true;
+    }
 
     const originalHost = this.config.host;
     let normalizedHost = originalHost;
@@ -930,30 +934,25 @@ class MideaSerialBridgeAdapter extends utils.Adapter {
       changed = true;
     }
 
-    if (
-      typeof this.config.customPolling !== 'boolean' &&
-      this.config.polling &&
-      typeof this.config.polling.customPolling === 'boolean'
-    ) {
-      this.config.customPolling = this.config.polling.customPolling;
+    // Legacy customPolling switches are no longer used; pollingRequests are always authoritative.
+    if (Object.prototype.hasOwnProperty.call(this.config, 'customPolling')) {
+      delete this.config.customPolling;
       changed = true;
     }
 
-    if (typeof this.config.customPolling !== 'boolean') {
-      this.config.customPolling = false;
-      changed = true;
-    }
-
-    if (
-      this.config.polling &&
-      typeof this.config.polling === 'object' &&
-      Object.prototype.hasOwnProperty.call(this.config.polling, 'requests')
-    ) {
-      delete this.config.polling.requests;
+    if (this.config.polling && typeof this.config.polling === 'object') {
+      if (Object.prototype.hasOwnProperty.call(this.config.polling, 'requests')) {
+        delete this.config.polling.requests;
+        changed = true;
+      }
+      if (Object.prototype.hasOwnProperty.call(this.config.polling, 'customPolling')) {
+        delete this.config.polling.customPolling;
+        changed = true;
+      }
       if (Object.keys(this.config.polling).length === 0) {
         delete this.config.polling;
+        changed = true;
       }
-      changed = true;
     }
 
     for (const key of ['exposeRawBytes', 'exposeAnalogCandidates']) {
