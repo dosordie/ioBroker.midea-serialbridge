@@ -1,17 +1,40 @@
 'use strict';
 
 const assert = require('assert');
-const { normalizePollingRequests, parseUnknownGroupIds } = require('../lib/polling-config');
+const {
+  POLLING_METHOD_MAP,
+  normalizePollingRequests,
+  parseUnknownGroupIds,
+} = require('../lib/polling-config');
 
 const DEFAULT_REQUESTS = [
   { id: 'getStatus', enabled: true, interval: 60 },
   { id: 'getCapabilities', enabled: false, interval: 3600 },
   { id: 'getPowerUsage', enabled: false, interval: 300 },
   { id: 'getGroup5Data', enabled: false, interval: 300 },
-  { id: 'getGroup41Data', enabled: false, interval: 300 },
+  { id: 'getGroup41Data', enabled: false, interval: 60 },
+  { id: 'getGroup43Data', enabled: false, interval: 60 },
 ];
 
 assert.deepStrictEqual(normalizePollingRequests({}), DEFAULT_REQUESTS);
+
+assert.deepStrictEqual(
+  normalizePollingRequests({
+    customPolling: false,
+    pollingRequests: [{ id: 'getPowerUsage', enabled: true, interval: 300 }],
+  }).find((entry) => entry.id === 'getPowerUsage'),
+  { id: 'getPowerUsage', enabled: true, interval: 300 }
+);
+
+assert.deepStrictEqual(
+  normalizePollingRequests({
+    customPolling: false,
+    polling: {
+      requests: [{ id: 'getStatus', enabled: true, interval: 90 }],
+    },
+  }).find((entry) => entry.id === 'getStatus'),
+  { id: 'getStatus', enabled: true, interval: 90 }
+);
 
 assert.deepStrictEqual(
   normalizePollingRequests({
@@ -27,7 +50,8 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: false, interval: 3600 },
     { id: 'getPowerUsage', enabled: true, interval: 45 },
     { id: 'getGroup5Data', enabled: false, interval: 300 },
-    { id: 'getGroup41Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 60 },
+    { id: 'getGroup43Data', enabled: false, interval: 60 },
   ]
 );
 
@@ -43,7 +67,8 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: true, interval: 600 },
     { id: 'getPowerUsage', enabled: false, interval: 300 },
     { id: 'getGroup5Data', enabled: false, interval: 300 },
-    { id: 'getGroup41Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 60 },
+    { id: 'getGroup43Data', enabled: false, interval: 60 },
   ]
 );
 
@@ -69,7 +94,8 @@ assert.deepStrictEqual(
     { id: 'getCapabilities', enabled: false, interval: 3600 },
     { id: 'getPowerUsage', enabled: false, interval: 300 },
     { id: 'getGroup5Data', enabled: true, interval: 60 },
-    { id: 'getGroup41Data', enabled: false, interval: 300 },
+    { id: 'getGroup41Data', enabled: false, interval: 60 },
+    { id: 'getGroup43Data', enabled: false, interval: 60 },
   ]
 );
 
@@ -77,7 +103,14 @@ assert.deepStrictEqual(
   normalizePollingRequests({
     pollingRequests: [{ id: 'getStatus', enabled: true, interval: 60 }],
   }).map((entry) => entry.id),
-  ['getStatus', 'getCapabilities', 'getPowerUsage', 'getGroup5Data', 'getGroup41Data']
+  [
+    'getStatus',
+    'getCapabilities',
+    'getPowerUsage',
+    'getGroup5Data',
+    'getGroup41Data',
+    'getGroup43Data',
+  ]
 );
 
 assert.deepStrictEqual(
@@ -103,16 +136,25 @@ assert.deepStrictEqual(
 
 assert.deepStrictEqual(
   normalizePollingRequests({
+    pollingRequests: [{ id: 'getGroup43Data', enabled: true, interval: 60 }],
+  }).find((entry) => entry.id === 'getGroup43Data'),
+  { id: 'getGroup43Data', enabled: true, interval: 60 }
+);
+
+assert.strictEqual(POLLING_METHOD_MAP.has('getGroup43Data'), true);
+
+assert.deepStrictEqual(
+  normalizePollingRequests({
     pollingRequests: [{ id: 'getPowerUsage', enabled: 'true', interval: 'not-a-number' }],
   }).find((entry) => entry.id === 'getPowerUsage'),
   { id: 'getPowerUsage', enabled: true, interval: 300 }
 );
 
-assert.deepStrictEqual(parseUnknownGroupIds('40,41,46'), {
+assert.deepStrictEqual(parseUnknownGroupIds('40,41,43,46'), {
   groups: [0x40, 0x46],
   invalid: [],
   duplicates: [],
-  skippedRegular: [0x41],
+  skippedRegular: [0x41, 0x43],
   truncated: false,
 });
 assert.deepStrictEqual(parseUnknownGroupIds('0x40,0x41'), {
@@ -122,11 +164,11 @@ assert.deepStrictEqual(parseUnknownGroupIds('0x40,0x41'), {
   skippedRegular: [0x41],
   truncated: false,
 });
-assert.deepStrictEqual(parseUnknownGroupIds('20,21,30,31,41,44,45,50,51,60,7F,80,xx'), {
+assert.deepStrictEqual(parseUnknownGroupIds('20,21,30,31,41,43,44,45,50,51,60,7F,80,xx'), {
   groups: [0x20, 0x21, 0x30, 0x31, 0x50, 0x51, 0x60, 0x7f],
   invalid: ['80', 'xx'],
   duplicates: [],
-  skippedRegular: [0x41, 0x44, 0x45],
+  skippedRegular: [0x41, 0x43, 0x44, 0x45],
   truncated: false,
 });
 assert.deepStrictEqual(parseUnknownGroupIds('40,0x40,41,41'), {

@@ -90,6 +90,22 @@ assert.strictEqual(group41Heating.indoorHeatExchangerTemperature, 52);
 assert.strictEqual(group41Heating.outdoorHeatExchangerTemperatureCandidate, 31);
 assert.strictEqual(group41Heating.outdoorTemperatureGroup41, 28.5);
 
+for (const value of [87, 97, 0]) {
+  const group43 = Buffer.from('c121014300000000000000000000000000000000', 'hex');
+  group43[10] = value;
+  const parsedGroup43 = parser(group43, { frame: Buffer.from([0xaa, 0x43]) });
+  assert.strictEqual(parsedGroup43.outdoorFanCommandCandidate, value);
+  assert.strictEqual(parsedGroup43.group, 3);
+  assert.strictEqual(parsedGroup43.group43_rawFrameHex, 'aa43');
+  assert.strictEqual(parsedGroup43.group43_payloadHex, group43.toString('hex'));
+  assert.strictEqual(parsedGroup43.rawFrameHex, 'aa43');
+  assert.strictEqual(parsedGroup43.payloadHex, group43.toString('hex'));
+  assert.strictEqual(parsedGroup43.rawBytes, undefined);
+  assert.strictEqual(parsedGroup43.rawByte10, undefined);
+  assert.strictEqual(parsedGroup43.rawByte10Bits, undefined);
+  assert.strictEqual(parsedGroup43.analogCandidates, undefined);
+}
+
 const shortGroup41 = parser(Buffer.from([0xc1, 0x21, 0x01, 0x41, 0x21]));
 assert.strictEqual(shortGroup41.compressorFrequency, undefined);
 assert.strictEqual(shortGroup41.group, 1);

@@ -25,13 +25,24 @@ For easier maintenance and to allow local modifications we ship a vendored copy 
 
 ## Configuration
 
-Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge on the **Connection** tab. The **Options** tab allows you to disable the audible confirmation beep, enable exposing raw status values and configure polling behaviour. You can enable or disable polling for each datapoint and configure custom intervals. If no custom interval is specified, the global interval is used. Enable the checkbox **Expose raw status datapoints** to automatically create read-only states for every property reported by the device (e.g. timers, lights or diagnostic flags). The additional states are created beneath the `statusRaw.*` channel and contain the raw values as delivered by the unit. If your bridge occasionally becomes unreachable you can enable **Restart adapter on connection errors** and specify the restart interval to automatically recover from prolonged outages without manual interaction.
+Open the adapter configuration in the ioBroker Admin. Enter the IP address (or hostname) and port of your serial bridge on the **Connection** tab. The **Options** tab allows you to disable the audible confirmation beep, enable exposing raw status values and configure polling behaviour. The legacy switch **Enable custom polling per command** / **Individuelle Abfrage je Befehl aktivieren** is no longer shown and is ignored for compatibility with older configurations. The table of cyclic requests is always authoritative: enable or disable each request there and configure its individual interval. Missing table entries are restored with safe defaults during adapter startup. Enable the checkbox **Expose raw status datapoints** to automatically create read-only states for every property reported by the device (e.g. timers, lights or diagnostic flags). The additional states are created beneath the `statusRaw.*` channel and contain the raw values as delivered by the unit. If your bridge occasionally becomes unreachable you can enable **Restart adapter on connection errors** and specify the restart interval to automatically recover from prolonged outages without manual interaction.
+
+The cyclic request table contains these regular polling requests:
+
+| Request                                           | Protocol response | Default          |
+| ------------------------------------------------- | ----------------- | ---------------- |
+| Status request / Statusabfrage                    | C0                | enabled, 60 s    |
+| Capabilities / Fähigkeiten                        | B5                | disabled, 3600 s |
+| Energy counter / Energiezähler                    | C1 Group 44       | disabled, 300 s  |
+| Group 5 data / Group-5-Daten                      | C1 Group 45       | disabled, 300 s  |
+| Group 41 diagnostic data / Group-41-Diagnosedaten | C1 Group 41       | disabled, 60 s   |
+| Group 43 diagnostic data / Group-43-Diagnosedaten | C1 Group 43       | disabled, 60 s   |
 
 ### Unknown C1 group diagnosis mode
 
 For protocol analysis you can enable **Enable unknown group diagnosis polling** on the **Options** tab. This mode is intentionally read-only: it sends only safe 20-byte C1 query frames in the known `41 21 01 <group> 00 ... 00` schema and does not send control, SetStatus or B0 property-set frames.
 
-Configure **Unknown group IDs** as comma-separated hexadecimal group bytes from `0x20` to `0x7F`, for example `20,21,30,31,50,51,60,7F`. The adapter ignores invalid values and duplicates, enforces a minimum interval of 10 seconds, limits the list to 16 groups, and polls the groups sequentially with a small pause so the device is not flooded. Regularly supported groups (`0x41` / `getGroup41Data`, `0x44` / power usage, `0x45` / Group 5 data) are skipped in this mode with a debug note.
+Configure **Unknown group IDs** as comma-separated hexadecimal group bytes from `0x20` to `0x7F`, for example `20,21,30,31,50,51,60,7F`. The adapter ignores invalid values and duplicates, enforces a minimum interval of 10 seconds, limits the list to 16 groups, and polls the groups sequentially with a small pause so the device is not flooded. Regularly supported groups (`0x41` / `getGroup41Data`, `0x43` / `getGroup43Data`, `0x44` / power usage, `0x45` / Group 5 data) are skipped in this mode with a debug note.
 
 Responses are written only below `statusRaw.unknownGroups.groupXX.*` for analysis and never create normal sensor datapoints. Each response includes only compact raw hex states: `rawFrameHex` and `payloadHex`. The mode intentionally does not create `rawByteXX`, `rawByteXXBits` or `analogCandidates` mass states. Compare `payloadHex` while changing real-world conditions to identify frame-level differences.
 
@@ -40,6 +51,10 @@ Responses are written only below `statusRaw.unknownGroups.groupXX.*` for analysi
 The regular polling configuration includes `getGroup41Data`, a read-only 20-byte C1 query (`41 21 01 41 00 ... 00`) for Group 41 diagnostic data. The decoded values are exposed as normal `sensors.*` datapoints. Some Group 41 values are still experimental and can differ between Midea devices, so uncertain values keep `Candidate` / `Kandidat` in their state IDs, names and descriptions.
 
 Group 41 currently exposes the confirmed compressor frequency, indoor pipe temperature, indoor heat exchanger temperature and Group 41 outdoor temperature. Byte 08 remains unclear and is therefore exposed neutrally as a raw value plus one temperature candidate. Byte 12 remains a candidate for an outdoor-unit / condenser / heat-exchanger temperature. Byte 10 and byte 11 use the `raw - 50` scaling found in newer logs; byte 08, byte 12 and byte 13 use `(byte - 50) / 2` for the temperature values. When raw status output is enabled, compact Group 41 raw values remain available as `statusRaw.group41_rawFrameHex` and `statusRaw.group41_payloadHex`.
+
+### C1 Group 43 diagnostic data
+
+The regular polling configuration includes `getGroup43Data`, a read-only 20-byte C1 query (`41 21 01 43 00 ... 00`) for Group 43 diagnostic data. Byte 10 is exposed as `sensors.outdoorFanCommandCandidate`, a candidate for outdoor fan command or outdoor fan demand. Observed values include `0` in fan/off and `87`/`97` in cooling/heating; the value is intentionally not named or treated as a confirmed rpm speed. When raw status output is enabled, compact Group 43 raw values are available as `statusRaw.group43_rawFrameHex` and `statusRaw.group43_payloadHex`.
 
 The following datapoints are available out of the box:
 
@@ -58,6 +73,7 @@ The following datapoints are available out of the box:
 | `indoorHeatExchangerTemperature`           | Indoor heat exchanger / pipe temperature from C1 Group 41 byte 11 (°C)                        | ✓    | ✗     |
 | `outdoorHeatExchangerTemperatureCandidate` | Candidate outdoor-unit, condenser or heat exchanger temperature from C1 Group 41 byte 12 (°C) | ✓    | ✗     |
 | `outdoorTemperatureGroup41`                | Outdoor temperature from C1 Group 41 byte 13 (°C)                                             | ✓    | ✗     |
+| `outdoorFanCommandCandidate`               | Candidate outdoor fan command / demand from C1 Group 43 byte 10; not confirmed as rpm         | ✓    | ✗     |
 | `fanSpeed`                                 | Fan speed (auto, low, medium, high)                                                           | ✓    | ✓     |
 | `swingMode`                                | Swing mode (off, vertical, horizontal, both)                                                  | ✓    | ✓     |
 | `ecoMode`                                  | Eco mode                                                                                      | ✓    | ✓     |
@@ -88,6 +104,10 @@ Successful commands are acknowledged automatically and the resulting status upda
 - The adapter currently supports a single indoor unit per instance.
 
 ## Changelog
+
+### 0.0.10
+
+- Clean up the Admin polling configuration, remove the legacy custom-polling switch, normalize polling request defaults and align request labels.
 
 ### 0.0.6
 

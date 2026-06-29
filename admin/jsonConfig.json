@@ -220,23 +220,6 @@
           "lg": 8,
           "xl": 6
         },
-        "customPolling": {
-          "type": "checkbox",
-          "label": {
-            "en": "Enable custom polling per command",
-            "de": "Individuelle Abfrage je Befehl aktivieren"
-          },
-          "default": false,
-          "help": {
-            "en": "Legacy compatibility switch only; configured commands below are always used when present.",
-            "de": "Nur noch Kompatibilitätsschalter; die unten konfigurierten Befehle werden immer verwendet, wenn sie vorhanden sind."
-          },
-          "xs": 12,
-          "sm": 6,
-          "md": 4,
-          "lg": 4,
-          "xl": 3
-        },
         "modeAsNumber": {
           "type": "checkbox",
           "label": {
@@ -295,8 +278,8 @@
             "de": "Befehle"
           },
           "help": {
-            "en": "Select which commands should be executed cyclically and configure their individual intervals.",
-            "de": "Wählen Sie, welche Befehle zyklisch ausgeführt werden, und konfigurieren Sie deren Intervalle."
+            "en": "Select which requests are executed cyclically and configure their individual intervals.",
+            "de": "Wählen Sie, welche Abfragen zyklisch ausgeführt werden, und legen Sie das jeweilige Intervall fest."
           },
           "xs": 12,
           "sm": 12,
@@ -324,36 +307,43 @@
                 {
                   "value": "getStatus",
                   "label": {
-                    "en": "Status (0x41)",
-                    "de": "Status (0x41)"
+                    "en": "Status request (C0)",
+                    "de": "Statusabfrage (C0)"
                   }
                 },
                 {
                   "value": "getCapabilities",
                   "label": {
-                    "en": "Capabilities (0xB5)",
-                    "de": "Fähigkeiten (0xB5)"
+                    "en": "Capabilities (B5)",
+                    "de": "Fähigkeiten (B5)"
                   }
                 },
                 {
                   "value": "getPowerUsage",
                   "label": {
-                    "en": "Power usage (0x41/energy)",
-                    "de": "Energieverbrauch (0x41/Energie)"
+                    "en": "Energy counter (C1 Group 44)",
+                    "de": "Energiezähler (C1 Group 44)"
                   }
                 },
                 {
                   "value": "getGroup5Data",
                   "label": {
-                    "en": "Group 5 data (0x41/group 5)",
-                    "de": "Group-5-Daten (0x41/Gruppe 5)"
+                    "en": "Group 5 data (C1 Group 45)",
+                    "de": "Group-5-Daten (C1 Group 45)"
                   }
                 },
                 {
                   "value": "getGroup41Data",
                   "label": {
-                    "en": "Group 41 diagnostic data",
-                    "de": "Group 41 Diagnosedaten"
+                    "en": "Group 41 diagnostic data (C1 Group 41)",
+                    "de": "Group-41-Diagnosedaten (C1 Group 41)"
+                  }
+                },
+                {
+                  "value": "getGroup43Data",
+                  "label": {
+                    "en": "Group 43 diagnostic data (C1 Group 43)",
+                    "de": "Group-43-Diagnosedaten (C1 Group 43)"
                   }
                 }
               ]
@@ -395,7 +385,12 @@
             {
               "id": "getGroup41Data",
               "enabled": false,
-              "interval": 300
+              "interval": 60
+            },
+            {
+              "id": "getGroup43Data",
+              "enabled": false,
+              "interval": 60
             }
           ]
         }
